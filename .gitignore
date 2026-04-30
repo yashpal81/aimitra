@@ -1,0 +1,23 @@
+# .NET Core
+obj/
+bin/
+
+# User-specific files
+*.user
+*.suo
+*.cache
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp

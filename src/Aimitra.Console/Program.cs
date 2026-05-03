@@ -6,11 +6,37 @@ using Aimitra.Core.Models;
 using Aimitra.Services.Metadata;
 using Aimitra.Services.OpenRouter;
 using Aimitra.Services.Orchestration;
-
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Connectors.OpenAI; // Essential for AddOpenAIChatCompletion
+using Microsoft.SemanticKernel.ChatCompletion;
+using System.Collections.Generic;
 namespace Aimitra.ConsoleApp
 {
     class Program
     {
+
+  /* static async Task Main()
+    {
+         var apiKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY");
+
+        var builder = Microsoft.SemanticKernel.Kernel.CreateBuilder();
+        var httpClient = new HttpClient();
+        var kernel = builder.AddOpenAIChatCompletion("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", new Uri("https://openrouter.ai/api/v1"), apiKey, string.Empty, "openrouter", null).Build();
+        Console.WriteLine(kernel != null);
+ var chat = kernel.GetRequiredService<Microsoft.SemanticKernel.ChatCompletion.IChatCompletionService>();
+DatabaseSchema schema = BuildSampleSchema();
+var history = new List<string>();
+var prompt = DatabaseQueryTool.BuildSemanticPrompt("List order totals", schema, history);
+                var chatHistory = new Microsoft.SemanticKernel.ChatCompletion.ChatHistory();
+                chatHistory.AddUserMessage(prompt);
+                var result =  await chat.GetChatMessageContentAsync(chatHistory, kernel: kernel, cancellationToken: default).ConfigureAwait(false);
+                string rawResponse = result?.Content ?? string.Empty;
+               Console.WriteLine(rawResponse); 
+
+
+    }
+*/
+
         static async Task Main(string[] args)
         {
             var apiKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY");
@@ -52,8 +78,8 @@ namespace Aimitra.ConsoleApp
 
             using (var httpClient = new HttpClient())
             {
-                var openRouterClient = new OpenRouterClient(httpClient, apiKey);
-                var orchestrator = new ReasoningOrchestrator(openRouterClient);
+               // var openRouterClient = new OpenRouterClient(httpClient, apiKey);
+                var orchestrator = new SemanticKernelOrchestrator(apiKey);
 
                 var question = "List each customer and their total order amount for orders placed in the last 30 days.";
                 try
@@ -65,6 +91,12 @@ namespace Aimitra.ConsoleApp
                     Console.WriteLine();
                     Console.WriteLine("=== Raw response ===");
                     Console.WriteLine(result.RawResponse);
+                    Console.WriteLine();
+                    Console.WriteLine("=== Reasoning trace ===");
+                    foreach (var step in result.Trace)
+                    {
+                        Console.WriteLine(step);
+                    }
                 }
                 catch (Exception ex)
                 {

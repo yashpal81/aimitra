@@ -81,7 +81,9 @@ var prompt = DatabaseQueryTool.BuildSemanticPrompt("List order totals", schema, 
                // var openRouterClient = new OpenRouterClient(httpClient, apiKey);
                 var orchestrator = new SemanticKernelOrchestrator(apiKey);
 
-                var question = "List each customer and their total order amount for orders placed in the last 30 days.";
+                //var question = "List each customer and their total order amount for orders placed in the last 30 days.";
+                var question = "give solution of any problem from stored problems";
+     
                 try
                 {
                     var result = await orchestrator.GenerateSqlFromQuestionAsync(question, schema).ConfigureAwait(false);

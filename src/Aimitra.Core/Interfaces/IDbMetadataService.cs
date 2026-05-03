@@ -12,5 +12,7 @@ namespace Aimitra.Core.Interfaces
         Task<IReadOnlyCollection<TableDefinition>> GetTableDefinitionsAsync(string connectionString, CancellationToken cancellationToken = default);
 
         Task<string> GenerateContextStringAsync(DatabaseSchema schema);
+        Task<string> ExecuteQueryAsJsonAsync(string connectionString, string query, CancellationToken cancellationToken = default);
+       
     }
 }

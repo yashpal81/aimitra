@@ -9,13 +9,16 @@ using Aimitra.Services.Interfaces;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI; // Essential for AddOpenAIChatCompletion
 using Microsoft.SemanticKernel.ChatCompletion;
+using Aimitra.Core.Interfaces;
+using Aimitra.Services.Metadata;
+using System.ClientModel;
 
 namespace Aimitra.Services.Orchestration
 {
     public sealed class SemanticKernelOrchestrator
     {
 
-        private const int MaxIterations = 3;
+        private const int MaxIterations = 5;
         private readonly string _model;
         private readonly string _apiKey;
         private readonly Uri _endpoint;
@@ -50,14 +53,17 @@ namespace Aimitra.Services.Orchestration
             //     orgId: null,
             //     serviceId: "openrouter",
             //     httpClient: null);
-            var kernel =builder.AddOpenAIChatCompletion("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", new Uri("https://openrouter.ai/api/v1"), _apiKey, string.Empty, "openrouter", null).Build();
+            var kernel =builder.AddOpenAIChatCompletion("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", new Uri("https://openrouter.ai/api/v1"), _apiKey, string.Empty, "openrouter", null)
+             .AddOpenAIChatCompletion("google/gemma-4-26b-a4b-it:free", new Uri("https://openrouter.ai/api/v1"), _apiKey, string.Empty, "openrouter", null) .Build();
             //var kernel = builder.Build();
             var chat = kernel.GetRequiredService<Microsoft.SemanticKernel.ChatCompletion.IChatCompletionService>();
 
 
             Console.WriteLine("starting iterations");
+            string finalResult ="";
             for (var iteration = 0; iteration < MaxIterations; iteration++)
             {
+                Console.WriteLine($"Iteration {iteration + 1}/{MaxIterations}");
                 var prompt = DatabaseQueryTool.BuildSemanticPrompt(question, schema, history);
                 var chatHistory = new Microsoft.SemanticKernel.ChatCompletion.ChatHistory();
                 chatHistory.AddUserMessage(prompt);
@@ -80,7 +86,19 @@ namespace Aimitra.Services.Orchestration
                 if (string.Equals(plan.Action, "WRITE_SQL", StringComparison.OrdinalIgnoreCase))
                 {
                     finalSql = CleanSql(plan.ActionInput);
-                    break;
+                    history.Add($"Observation: '{finalSql}'");
+                    continue;
+                    //break;
+                }
+
+
+                if (string.Equals(plan.Action, "Execute_SQL", StringComparison.OrdinalIgnoreCase))
+                {
+                    finalSql = CleanSql(plan.ActionInput);
+                    finalResult = await executeSql(finalSql);
+                    history.Add($"Observation: '{finalResult}'");
+                    continue;
+                    //break;
                 }
 
                 if (string.Equals(plan.Action, "FINISH", StringComparison.OrdinalIgnoreCase))
@@ -98,7 +116,7 @@ namespace Aimitra.Services.Orchestration
                 history.Add("Observation: Parsed raw response as SQL fallback.");
             }
 
-            return new ReasoningResult(finalSql ?? string.Empty, string.Empty, rawResponse, history);
+            return new ReasoningResult(finalResult ?? string.Empty, finalSql ?? string.Empty, rawResponse, history);
         }
 
         private static ActionPlan ParseActionPlan(string rawResponse)
@@ -168,7 +186,24 @@ namespace Aimitra.Services.Orchestration
             var trimmed = raw.Trim();
             return trimmed.Trim('`', '\'', '"').Trim();
         }
+        private static async Task<string> executeSql(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return string.Empty;
+            }
+            var provider = Environment.GetEnvironmentVariable("DB_PROVIDER")?.Trim().ToLowerInvariant();
+            var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+            IDbMetadataService metadataService = provider switch
+            {
+                "sqlserver" => new SqlServerMetadataService(),
+                "postgres" => new PostgresMetadataService(),
+                _ => null
+            };
 
+        string result  = await metadataService.ExecuteQueryAsJsonAsync(connectionString, raw).ConfigureAwait(false);
+        return result;      
+        }
         private sealed class ActionPlan
         {
             public ActionPlan(string thought, string action, string actionInput)

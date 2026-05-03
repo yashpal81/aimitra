@@ -10,6 +10,35 @@ namespace Aimitra.Services.Metadata
 {
     public sealed class PostgresMetadataService : IDbMetadataService
     {
+        /// <summary>
+        /// Executes a SQL query and returns the result as a JSON array.
+        /// </summary>
+        public async Task<string> ExecuteQueryAsJsonAsync(string connectionString, string query, CancellationToken cancellationToken = default)
+        {
+            var results = new List<Dictionary<string, object?>>();
+            using (var connection = new NpgsqlConnection(connectionString))
+            {
+                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = query;
+                    using (var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
+                    {
+                        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                        {
+                            var row = new Dictionary<string, object?>();
+                            for (int i = 0; i < reader.FieldCount; i++)
+                            {
+                                var value = reader.IsDBNull(i) ? null : reader.GetValue(i);
+                                row[reader.GetName(i)] = value;
+                            }
+                            results.Add(row);
+                        }
+                    }
+                }
+            }
+            return System.Text.Json.JsonSerializer.Serialize(results);
+        }
         public async Task<DatabaseSchema> GetSchemaAsync(string connectionString, CancellationToken cancellationToken = default)
         {
             var tables = await GetTableDefinitionsAsync(connectionString, cancellationToken).ConfigureAwait(false);

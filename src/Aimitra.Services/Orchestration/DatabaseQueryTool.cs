@@ -47,11 +47,12 @@ namespace Aimitra.Services.Orchestration
         {
             var builder = new StringBuilder();
             builder.AppendLine("You are an intelligent SQL reasoning agent.");
-            builder.AppendLine("You may call tools to inspect the database schema before producing a final SQL query.");
+            builder.AppendLine("You may call tools to inspect the database schema before producing a final SQL query and executing it.");
             builder.AppendLine();
             builder.AppendLine("Tools:");
             builder.AppendLine("- DB_SCHEMA: returns the database schema details.");
-            builder.AppendLine("- WRITE_SQL: returns the final SQL query only.");
+            builder.AppendLine("- WRITE_SQL: returns the results as SQL query only.");
+            builder.AppendLine("- EXECUTE_SQL: returns the results of a SQL query only.");
             builder.AppendLine();
             builder.AppendLine("When you respond, return a JSON object with the following properties:");
             builder.AppendLine("{\n  \"thought\": string,\n  \"action\": \"DB_SCHEMA\" | \"WRITE_SQL\" | \"FINISH\",\n  \"action_input\": string\n}");
@@ -59,6 +60,10 @@ namespace Aimitra.Services.Orchestration
             builder.AppendLine("If you need more schema detail, use action DB_SCHEMA.");
             builder.AppendLine("If you have a final SQL query, use action WRITE_SQL and put the SQL in action_input.");
             builder.AppendLine();
+            builder.AppendLine("If you need to execute a SQL query, use action EXECUTE_SQL and put the SQL in action_input.");
+            builder.AppendLine("If you have a final SQL query, use action EXECUTE_SQL and put the SQL in action_input.");
+            builder.AppendLine();
+         
             builder.AppendLine("Use only valid JSON. Do not include any markdown or extra text outside the JSON object.");
             builder.AppendLine();
             builder.AppendLine("Question:");

@@ -5,6 +5,7 @@ namespace Aimitra.Core.Models
 {
     public sealed class DatabaseSchema
     {
+        public DatabaseSchema(){}
         public DatabaseSchema(string databaseName, IReadOnlyCollection<TableDefinition> tables)
         {
             DatabaseName = databaseName;

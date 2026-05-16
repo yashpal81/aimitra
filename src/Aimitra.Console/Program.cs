@@ -11,6 +11,18 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI; // Essential for AddOpenAIChatCompletion
 using Microsoft.SemanticKernel.ChatCompletion;
 using System.Collections.Generic;
+
+
+
+using System;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.SemanticKernel;
+
+
+
 namespace Aimitra.ConsoleApp
 {
     class Program
@@ -45,12 +57,15 @@ namespace Aimitra.ConsoleApp
             var provider = Environment.GetEnvironmentVariable("DB_PROVIDER")?.Trim().ToLowerInvariant();
             var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
 
+            var presidioEndpoint = Environment.GetEnvironmentVariable("PRESIDIO_ENDPOINT");
             Console.WriteLine($"Using environment: {environmentName}");
             Console.WriteLine($"Using OpenAI URL: {openAIURL}");
             Console.WriteLine($"Using OpenAI Model: {openAIModel}");
             Console.WriteLine($"Using DB Provider: {provider}");
             Console.WriteLine($"Using DB Connection String: {connectionString}");
-                        
+            Console.WriteLine($"Using Presidio Endpoint: {presidioEndpoint}");
+
+
             IDbMetadataService metadataService = provider switch
             {
                 "sqlserver" => new SqlServerMetadataService(),
@@ -82,7 +97,7 @@ namespace Aimitra.ConsoleApp
             using (var httpClient = new HttpClient())
             {
                // var openRouterClient = new OpenRouterClient(httpClient, apiKey);
-                var orchestrator = new SemanticKernelOrchestrator(apiKey, openAIModel, openAIURL);
+                var orchestrator = new SemanticKernelOrchestrator(apiKey, openAIModel, openAIURL, presidioEndpoint);
 
                 //var question = "List each customer and their total order amount for orders placed in the last 30 days.";
                 var question = "give solution of any problem from the problems stored in database table";

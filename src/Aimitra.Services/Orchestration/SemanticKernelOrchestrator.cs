@@ -42,13 +42,14 @@ public class ActionCall
         private readonly string _model;
         private readonly string _apiKey;
         private readonly Uri _endpoint;
+        private readonly string _presidioEndpoint;
 
-       public SemanticKernelOrchestrator(string apiKey, string model , string endpoint)
-       
+        public SemanticKernelOrchestrator(string apiKey, string model, string endpoint, string presidioEndpoint)
         {
             _apiKey = string.IsNullOrWhiteSpace(apiKey) ? throw new ArgumentException("API key cannot be empty.", nameof(apiKey)) : apiKey;
             _model = string.IsNullOrWhiteSpace(model) ? throw new ArgumentException("Model cannot be empty.", nameof(model)) : model;
             _endpoint = new Uri(endpoint);
+            _presidioEndpoint = string.IsNullOrWhiteSpace(presidioEndpoint) ? throw new ArgumentException("Presidio endpoint cannot be empty.", nameof(presidioEndpoint)) : presidioEndpoint;
         }
 
         public async Task<ReasoningResult> GenerateSqlFromQuestionAsync(string question, DatabaseSchema schema, CancellationToken cancellationToken = default)
@@ -64,6 +65,7 @@ public class ActionCall
             Console.WriteLine(question);
             Console.WriteLine(_model);
             Console.WriteLine(_endpoint);
+            Console.WriteLine(_presidioEndpoint);
             Console.WriteLine("API key loaded from configuration.");
             // Build Semantic Kernel kernel with OpenRouter as OpenAI-compatible endpoint
             var builder = Microsoft.SemanticKernel.Kernel.CreateBuilder();
@@ -79,7 +81,7 @@ public class ActionCall
             string provider = "OpenAI";//"openrouter";
 
             // Instantiate the engine
-            var maskingEngine = new PiiMaskingEngine();
+            var maskingEngine = new PiiMaskingEngine(_presidioEndpoint);
 
             // Register as both the INBOUND and OUTBOUND filter interceptor
             builder.Services.AddSingleton<IFunctionInvocationFilter>(maskingEngine);

@@ -15,36 +15,29 @@ namespace Aimitra.ConsoleApp
     class Program
     {
 
-  /* static async Task Main()
-    {
-         var apiKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY");
-
-        var builder = Microsoft.SemanticKernel.Kernel.CreateBuilder();
-        var httpClient = new HttpClient();
-        var kernel = builder.AddOpenAIChatCompletion("nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", new Uri("https://openrouter.ai/api/v1"), apiKey, string.Empty, "openrouter", null).Build();
-        Console.WriteLine(kernel != null);
- var chat = kernel.GetRequiredService<Microsoft.SemanticKernel.ChatCompletion.IChatCompletionService>();
-DatabaseSchema schema = BuildSampleSchema();
-var history = new List<string>();
-var prompt = DatabaseQueryTool.BuildSemanticPrompt("List order totals", schema, history);
-                var chatHistory = new Microsoft.SemanticKernel.ChatCompletion.ChatHistory();
-                chatHistory.AddUserMessage(prompt);
-                var result =  await chat.GetChatMessageContentAsync(chatHistory, kernel: kernel, cancellationToken: default).ConfigureAwait(false);
-                string rawResponse = result?.Content ?? string.Empty;
-               Console.WriteLine(rawResponse); 
-
-
-    }
-*/
 
         static async Task Main(string[] args)
         {
-            var apiKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY");
+            var apiKey = Environment.GetEnvironmentVariable("API_KEY");
             if (string.IsNullOrWhiteSpace(apiKey))
             {
-                Console.WriteLine("OPENROUTER_API_KEY environment variable is required.");
+                Console.WriteLine("API_KEY environment variable is required.");
                 return;
             }
+
+            var openAIURL = Environment.GetEnvironmentVariable("OPENAI_URL");
+            if (string.IsNullOrWhiteSpace(openAIURL))
+            {
+                Console.WriteLine("OPENAI_URL environment variable is required.");
+                return;
+            }            
+            var openAIModel = Environment.GetEnvironmentVariable("OPENAI_MODEL");
+            if (string.IsNullOrWhiteSpace(openAIModel))
+            {
+                Console.WriteLine("OPENAI_MODEL environment variable is required.");
+                return;
+            }
+
 
             var provider = Environment.GetEnvironmentVariable("DB_PROVIDER")?.Trim().ToLowerInvariant();
             var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
@@ -79,7 +72,7 @@ var prompt = DatabaseQueryTool.BuildSemanticPrompt("List order totals", schema, 
             using (var httpClient = new HttpClient())
             {
                // var openRouterClient = new OpenRouterClient(httpClient, apiKey);
-                var orchestrator = new SemanticKernelOrchestrator(apiKey);
+                var orchestrator = new SemanticKernelOrchestrator(apiKey, openAIModel, openAIURL);
 
                 //var question = "List each customer and their total order amount for orders placed in the last 30 days.";
                 var question = "give solution of any problem from the problems stored in database table";

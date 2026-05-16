@@ -74,6 +74,8 @@ public class DatabasePlugin
             };
 
         string result  = metadataService.ExecuteQueryAsJsonAsync(connectionString, sql).Result;
+        Console.WriteLine($"Executed SQL: {sql}");
+        Console.WriteLine($"Query result: {result}");
         return result;
         }
 }

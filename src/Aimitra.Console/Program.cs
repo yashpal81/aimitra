@@ -6,6 +6,7 @@ using Aimitra.Core.Models;
 using Aimitra.Services.Metadata;
 using Aimitra.Services.OpenRouter;
 using Aimitra.Services.Orchestration;
+using Aimitra.ConsoleApp.Configuration;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI; // Essential for AddOpenAIChatCompletion
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -18,6 +19,9 @@ namespace Aimitra.ConsoleApp
 
         static async Task Main(string[] args)
         {
+            var environmentName = Environment.GetEnvironmentVariable("AIMITRA_ENVIRONMENT")?.Trim();
+            EnvFileLoader.Load(environmentName);
+
             var apiKey = Environment.GetEnvironmentVariable("API_KEY");
             if (string.IsNullOrWhiteSpace(apiKey))
             {
@@ -38,9 +42,15 @@ namespace Aimitra.ConsoleApp
                 return;
             }
 
-
             var provider = Environment.GetEnvironmentVariable("DB_PROVIDER")?.Trim().ToLowerInvariant();
             var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+
+            Console.WriteLine($"Using environment: {environmentName}");
+            Console.WriteLine($"Using OpenAI URL: {openAIURL}");
+            Console.WriteLine($"Using OpenAI Model: {openAIModel}");
+            Console.WriteLine($"Using DB Provider: {provider}");
+            Console.WriteLine($"Using DB Connection String: {connectionString}");
+                        
             IDbMetadataService metadataService = provider switch
             {
                 "sqlserver" => new SqlServerMetadataService(),

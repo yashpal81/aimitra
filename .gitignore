@@ -1,15 +1,26 @@
-# .NET Core
-obj/
+# .NET
 bin/
+obj/
+TestResults/
+artifacts/
+*.nupkg
+*.snupkg
+
+# JavaScript / frontend dependencies
+node_modules/
+**/node_modules/
 
 # User-specific files
 *.user
 *.suo
 *.cache
+*.userosscache
+*.sln.docstates
 
 # IDE files
 .vscode/
 .idea/
+.vs/
 
 # OS files
 .DS_Store
@@ -21,3 +32,15 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+*.bak
+*.swp
+*.swo
+
+# Environment files
+*.env
+
+# Local probes and generated artifacts
+#agentic_sdk.md
+#plan-prototypingPhase.prompt.md
+#src/temp_openrouter_probe.py
+#src/Aimitra.Services/Orchestration/backupcode.txt

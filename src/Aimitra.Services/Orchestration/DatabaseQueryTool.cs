@@ -46,36 +46,50 @@ namespace Aimitra.Services.Orchestration
         public static string BuildSemanticPrompt(string userQuestion, DatabaseSchema schema, IReadOnlyCollection<string> history)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("You are an intelligent SQL reasoning agent.");
-            builder.AppendLine("You may call tools to inspect the database schema before producing a final SQL query and executing it.");
+            // builder.AppendLine("You are an intelligent SQL reasoning agent.");
+            // builder.AppendLine("Break down the problem into logical steps to solve it using the database schema.");
+            // builder.AppendLine();
+            // builder.AppendLine("CRITICAL RESPONSE FORMAT:");
+            // builder.AppendLine("- Return ONLY a valid JSON array.");
+            // builder.AppendLine("- NO markdown formatting, NO code fences, NO backticks, NO explanation text.");
+            // builder.AppendLine("- Each step must be a JSON object with exactly these fields:");
+            // builder.AppendLine("  * \"step\": an integer (1, 2, 3, etc.)");
+            // builder.AppendLine("  * \"content\": a descriptive string");
+            // builder.AppendLine();
+            // builder.AppendLine("Example response (no other text):");
+            // builder.AppendLine("[");
+            // builder.AppendLine("  { \"step\": 1, \"content\": \"Identify the required tables from the schema.\" },");
+            // builder.AppendLine("  { \"step\": 2, \"content\": \"Determine the join conditions between tables.\" },");
+            // builder.AppendLine("  { \"step\": 3, \"content\": \"Formulate the SQL query based on requirements.\" },");
+            // builder.AppendLine("  { \"step\": 4, \"content\": \"Execute the query and return results.\" }");
+            // builder.AppendLine("]");
+            // builder.AppendLine();
+            // // builder.AppendLine("Database Schema Summary:");
+            // // builder.AppendLine(BuildSchemaSummary(schema));
+            // builder.AppendLine("resources:");
+            // builder.AppendLine("Database name : SalesforceCoder");
+            // builder.AppendLine("Database description : A PostgreSQL database for storing SalesforceCoder application data");
+            // builder.AppendLine("Database provider : postgres");
+            // builder.AppendLine();
+            // builder.AppendLine("User Question:");
+            // builder.AppendLine(userQuestion);
+            // builder.AppendLine();
+            // builder.AppendLine("<CRITICAL_INSTRUCTION>");
+            // builder.AppendLine("1. Respond with ONLY the JSON array.");
+            // builder.AppendLine("2. Do NOT include any text before or after the JSON.");
+            // builder.AppendLine("3. Do NOT use markdown code blocks (```json ... ```).");
+            // builder.AppendLine("4. Each object must have \"step\" (integer) and \"content\" (string) fields.");
+            // builder.AppendLine("5. Number steps sequentially starting from 1.");
+            // builder.AppendLine("</CRITICAL_INSTRUCTION>");
+            builder.AppendLine("Do not write down plans, text steps, or mock schemas. If you need information about a database schema or need to run a query, you must execute the corresponding tool immediately. Wait for the tool's output before continuing your analysis.");
             builder.AppendLine();
-            builder.AppendLine("Tools:");
-            builder.AppendLine("- DB_SCHEMA: returns the database schema details.");
-            builder.AppendLine("- WRITE_SQL: returns the results as SQL query only.");
-            builder.AppendLine("- EXECUTE_SQL: returns the results of a SQL query only.");
+            builder.AppendLine("User Question:");
+            builder.AppendLine("Generate a sample solution for problem where Id is 7 from the problems stored inside the SalesforceCoder database.");
             builder.AppendLine();
-            builder.AppendLine("When you respond, return a JSON object with the following properties:");
-            builder.AppendLine("{\n  \"thought\": string,\n  \"action\": \"DB_SCHEMA\" | \"WRITE_SQL\" | \"FINISH\",\n  \"action_input\": string\n}");
-            builder.AppendLine();
-            builder.AppendLine("If you need more schema detail, use action DB_SCHEMA.");
-            builder.AppendLine("If you have a final SQL query, use action WRITE_SQL and put the SQL in action_input.");
-            builder.AppendLine();
-            builder.AppendLine("If you need to execute a SQL query, use action EXECUTE_SQL and put the SQL in action_input.");
-            builder.AppendLine("If you have a final SQL query, use action EXECUTE_SQL and put the SQL in action_input.");
-            builder.AppendLine();
-         
-            builder.AppendLine("Use only valid JSON. Do not include any markdown or extra text outside the JSON object.");
-            builder.AppendLine();
-            builder.AppendLine("Question:");
-            builder.AppendLine(userQuestion);
-            builder.AppendLine();
-            builder.AppendLine("Known schema summary:");
-            builder.AppendLine(BuildSchemaSummary(schema));
-
             if (history != null && history.Count > 0)
             {
                 builder.AppendLine();
-                builder.AppendLine("History:");
+                builder.AppendLine("Previous context:");
                 foreach (var item in history)
                 {
                     builder.AppendLine(item);

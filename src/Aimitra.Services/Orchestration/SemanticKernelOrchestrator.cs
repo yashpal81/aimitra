@@ -15,6 +15,8 @@ using Aimitra.Services.Metadata;
 using System.ClientModel;
 using System.Text.RegularExpressions;
 using Aimitra.Services.Plugins;
+using Aimitra.Security;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Aimitra.Services.Orchestration
 {
@@ -36,7 +38,6 @@ public class ActionCall
 
     public sealed class SemanticKernelOrchestrator
     {
-
         private const int MaxIterations = 1;
         private readonly string _model;
         private readonly string _apiKey;
@@ -77,7 +78,12 @@ public class ActionCall
                 };
             string provider = "OpenAI";//"openrouter";
 
+            // Instantiate the engine
+            var maskingEngine = new PiiMaskingEngine();
 
+            // Register as both the INBOUND and OUTBOUND filter interceptor
+            builder.Services.AddSingleton<IFunctionInvocationFilter>(maskingEngine);
+            builder.Services.AddSingleton<IAutoFunctionInvocationFilter>(maskingEngine);
             var kernel =builder.AddOpenAIChatCompletion(_model, _endpoint, _apiKey, string.Empty,provider , null).Build();
             kernel.Plugins.AddFromType<DatabasePlugin>("DatabaseTools");
 

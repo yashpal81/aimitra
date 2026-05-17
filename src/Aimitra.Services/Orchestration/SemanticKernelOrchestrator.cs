@@ -90,6 +90,7 @@ public class ActionCall
             // Register as both the INBOUND and OUTBOUND filter interceptor
             builder.Services.AddSingleton<IFunctionInvocationFilter>(maskingEngine);
             builder.Services.AddSingleton<IAutoFunctionInvocationFilter>(maskingEngine);
+            builder.Services.AddSingleton<IPromptRenderFilter>(maskingEngine);
             var kernel =builder.AddOpenAIChatCompletion(_model, _endpoint, _apiKey, string.Empty,provider , null).Build();
             Console.WriteLine("Kernel built with OpenAI Chat Completion service.");
             Console.WriteLine(_routeAgent);
@@ -128,13 +129,16 @@ public class ActionCall
             {
                 Console.WriteLine($"Iteration {iteration + 1}/{MaxIterations}");
                 var prompt = DatabaseQueryTool.BuildSemanticPrompt(question, schema, history);
+                
                 var chatHistory = new Microsoft.SemanticKernel.ChatCompletion.ChatHistory();
+                prompt =maskingEngine.maskPrompt(prompt).Result;
                 chatHistory.AddUserMessage(prompt);
+
                 var result = await chat.GetChatMessageContentAsync(chatHistory,executionSettings: settings, kernel: kernel, cancellationToken: cancellationToken).ConfigureAwait(false);
                 rawResponse = result?.Content ?? string.Empty;
                // var plan = ParseActionPlan(rawResponse);
                Console.WriteLine("Parsing steps response..."+rawResponse);
-      
+               rawResponse= maskingEngine.unmaskResult(rawResponse).Result; 
             }
 
  

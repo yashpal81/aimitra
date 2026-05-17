@@ -11,17 +11,12 @@ using System.Numerics;
 
 namespace Aimitra.Security{
 
-public class PresidioResponse
-{
-    public string Entity { get; set; } = string.Empty;
-    public int Start { get; set; }
-    public int End { get; set; }
-}
-public class PiiMaskingEngine : IFunctionInvocationFilter, IAutoFunctionInvocationFilter
+public class PiiMaskingEngine : IPromptRenderFilter, IFunctionInvocationFilter, IAutoFunctionInvocationFilter
 {
     // Thread-safe dictionary storing Token -> Real Value mapping
-    private readonly ConcurrentDictionary<string, string> _vault = new();
+    //private readonly ConcurrentDictionary<string, string> _vault = new();
     
+    private readonly MaskingCore _maskingCore;
     // Simulated delay of 30 seconds to run under LLM time constraints and observe masking/unmasking in action
     private readonly int waitingTime = 30000;
     // // Core regex patterns to detect raw data coming from your DB tools
@@ -36,8 +31,50 @@ public class PiiMaskingEngine : IFunctionInvocationFilter, IAutoFunctionInvocati
     public PiiMaskingEngine(string presidioEndpoint)
     {
         _httpClient.BaseAddress = new Uri(presidioEndpoint);
+        _maskingCore = new MaskingCore(presidioEndpoint);
     }
 
+// =================================================================
+    // STEP 0: MASKING IN THE PROMPT (LLM -> LLM)
+    // =================================================================
+    public async Task<string> maskPrompt(string prompt)
+    {
+        Console.WriteLine("Prompt before to Call LLM masking: " + prompt);
+        string maskedPrompt= await _maskingCore.maskPiiData(prompt);
+        Console.WriteLine("Masked Prompt before calling LLM: " + maskedPrompt);
+        return maskedPrompt;
+    }
+// =================================================================
+    // STEP A: UNMASK BEFORE TOOL CALLS (LLM -> Tool)
+    // =================================================================
+    public async Task<string> unmaskResult(string result)
+    {
+        Console.WriteLine("Original Result before unmasking: " + result);
+        string unmaskedResult= await _maskingCore.unmaskPiiData(result);
+        Console.WriteLine("Unmasked Result for Tool: " + unmaskedResult);
+        return unmaskedResult;
+    }
+
+
+// =================================================================
+// STEP 0: MASKING IN THE PROMPT (LLM -> LLM)
+// =================================================================
+    public async Task OnPromptRenderAsync(PromptRenderContext context, Func<PromptRenderContext , Task> next)
+    {
+        Console.WriteLine("Prompt before to Call LLM masking: " + context.RenderedPrompt);
+        await Task.Delay(waitingTime);
+        // Only process the main user input prompt, not system or assistant messages
+        if (context.RenderedPrompt != null)// && context.RenderedPrompt.Role == "user")
+        {
+            string prompt = context.RenderedPrompt;
+            string maskedPrompt = await _maskingCore.maskPiiData(prompt);
+        Console.WriteLine("Masked Prompt: " + maskedPrompt);
+        // Overwrite the prompt so Gemini only sees the tracking token string
+        context.RenderedPrompt = maskedPrompt;
+        }
+        Console.WriteLine("Prompt after masking to call LLM: " + context.RenderedPrompt);
+        await next(context);
+    }   
 
     // =================================================================
     // STEP A: UNMASK BEFORE TOOL CALLS (LLM -> Tool)
@@ -52,7 +89,7 @@ public class PiiMaskingEngine : IFunctionInvocationFilter, IAutoFunctionInvocati
             if (string.IsNullOrEmpty(argumentValue)) continue;
 
             // Scan the string for any placeholder tokens we created earlier
-            foreach (var pair in _vault)
+            foreach (var pair in _maskingCore.Vault)
             {
                 if (argumentValue.Contains(pair.Key))
                 {
@@ -120,7 +157,7 @@ public class PiiMaskingEngine : IFunctionInvocationFilter, IAutoFunctionInvocati
             string rawValue = originalResult.Substring(pii.Start, pii.End - pii.Start);
             sb.Remove(pii.Start, pii.End - pii.Start);
             sb.Insert(pii.Start, token);
-            _vault[token] = rawValue;
+            _maskingCore.Vault[token] = rawValue;
         }
 
         string maskedResult = sb.ToString();

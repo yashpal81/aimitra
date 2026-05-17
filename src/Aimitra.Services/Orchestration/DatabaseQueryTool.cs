@@ -85,7 +85,9 @@ namespace Aimitra.Services.Orchestration
             builder.AppendLine();
             builder.AppendLine("User Question:");
             //builder.AppendLine("Generate a sample solution for problem where Id is 7 from the problems stored inside the SalesforceCoder database.");
-            builder.AppendLine("Give me the name of highest scorer in leaderboard inside the SalesforceCoder database.");
+            //builder.AppendLine("Give me the name of highest scorer in leaderboard inside the SalesforceCoder database.");
+            builder.AppendLine("Friendly greeting for the Yashpal Sharma no need to check database or execute sql query just send a simple greeting. and also let me know if you have used the greeting plugin or not.");
+            
             builder.AppendLine();
             if (history != null && history.Count > 0)
             {

@@ -43,6 +43,7 @@ public class ActionCall
         private readonly string _apiKey;
         private readonly Uri _endpoint;
         private readonly string _presidioEndpoint;
+        private readonly KernelPluginLoader _pluginLoader;
 
         public SemanticKernelOrchestrator(string apiKey, string model, string endpoint, string presidioEndpoint)
         {
@@ -50,6 +51,7 @@ public class ActionCall
             _model = string.IsNullOrWhiteSpace(model) ? throw new ArgumentException("Model cannot be empty.", nameof(model)) : model;
             _endpoint = new Uri(endpoint);
             _presidioEndpoint = string.IsNullOrWhiteSpace(presidioEndpoint) ? throw new ArgumentException("Presidio endpoint cannot be empty.", nameof(presidioEndpoint)) : presidioEndpoint;
+            _pluginLoader = new KernelPluginLoader(KernelPluginOptions.FromEnvironment());
         }
 
         public async Task<ReasoningResult> GenerateSqlFromQuestionAsync(string question, DatabaseSchema schema, CancellationToken cancellationToken = default)
@@ -87,7 +89,8 @@ public class ActionCall
             builder.Services.AddSingleton<IFunctionInvocationFilter>(maskingEngine);
             builder.Services.AddSingleton<IAutoFunctionInvocationFilter>(maskingEngine);
             var kernel =builder.AddOpenAIChatCompletion(_model, _endpoint, _apiKey, string.Empty,provider , null).Build();
-            kernel.Plugins.AddFromType<DatabasePlugin>("DatabaseTools");
+            //kernel.Plugins.AddFromType<DatabasePlugin>("DatabaseTools");
+            _pluginLoader.RegisterConfiguredPlugins(kernel);
 
             var chat = kernel.GetRequiredService<Microsoft.SemanticKernel.ChatCompletion.IChatCompletionService>();
 

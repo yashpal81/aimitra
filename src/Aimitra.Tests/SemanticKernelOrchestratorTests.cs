@@ -19,7 +19,7 @@ namespace Aimitra.Tests
                 .ReturnsAsync("{\"thought\":\"Inspect schema\",\"action\":\"DB_SCHEMA\",\"action_input\":\"Need details\"}")
                 .ReturnsAsync("{\"thought\":\"Produce SQL\",\"action\":\"WRITE_SQL\",\"action_input\":\"SELECT CustomerId, TotalAmount FROM dbo.Orders;\"}");
 
-            var orchestrator = new SemanticKernelOrchestrator(mockOpenRouter.Object);
+            var orchestrator = new SemanticKernelOrchestrator("test_api_key","test_model", "https://test.endpoint   ");
             var schema = new DatabaseSchema(
                 databaseName: "TestDb",
                 tables: new List<TableDefinition>

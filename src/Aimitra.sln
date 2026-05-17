@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aimitra.Console", "Aimitra.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aimitra.Tests", "Aimitra.Tests\Aimitra.Tests.csproj", "{2DB01C8A-0F01-4E96-9271-8FE919E23BF0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aimitra.Security", "Aimitra.Security\Aimitra.Security.csproj", "{AB45CE0B-BF3A-48EB-ABA1-681D6AE23A00}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -72,5 +74,17 @@ Global
 		{2DB01C8A-0F01-4E96-9271-8FE919E23BF0}.Release|x64.Build.0 = Release|Any CPU
 		{2DB01C8A-0F01-4E96-9271-8FE919E23BF0}.Release|x86.ActiveCfg = Release|Any CPU
 		{2DB01C8A-0F01-4E96-9271-8FE919E23BF0}.Release|x86.Build.0 = Release|Any CPU
+		{AB45CE0B-BF3A-48EB-ABA1-681D6AE23A00}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB45CE0B-BF3A-48EB-ABA1-681D6AE23A00}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB45CE0B-BF3A-48EB-ABA1-681D6AE23A00}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AB45CE0B-BF3A-48EB-ABA1-681D6AE23A00}.Debug|x64.Build.0 = Debug|Any CPU
+		{AB45CE0B-BF3A-48EB-ABA1-681D6AE23A00}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AB45CE0B-BF3A-48EB-ABA1-681D6AE23A00}.Debug|x86.Build.0 = Debug|Any CPU
+		{AB45CE0B-BF3A-48EB-ABA1-681D6AE23A00}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB45CE0B-BF3A-48EB-ABA1-681D6AE23A00}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB45CE0B-BF3A-48EB-ABA1-681D6AE23A00}.Release|x64.ActiveCfg = Release|Any CPU
+		{AB45CE0B-BF3A-48EB-ABA1-681D6AE23A00}.Release|x64.Build.0 = Release|Any CPU
+		{AB45CE0B-BF3A-48EB-ABA1-681D6AE23A00}.Release|x86.ActiveCfg = Release|Any CPU
+		{AB45CE0B-BF3A-48EB-ABA1-681D6AE23A00}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

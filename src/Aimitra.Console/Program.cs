@@ -1,41 +1,23 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
+using Aimitra.ConsoleApp.Configuration;
 using Aimitra.Core.Interfaces;
 using Aimitra.Core.Models;
-using Aimitra.Services.Metadata;
-using Aimitra.Services.OpenRouter;
-using Aimitra.Services.Orchestration;
-using Aimitra.ConsoleApp.Configuration;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Connectors.OpenAI; // Essential for AddOpenAIChatCompletion
-using Microsoft.SemanticKernel.ChatCompletion;
-using System.Collections.Generic;
-using Microsoft.SemanticKernel.Connectors.Google; // Using Google AI Studio
-
-
-
-using System;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.SemanticKernel;
-
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Connectors.Google;
-using System.Security.Cryptography;
+using Aimitra.SamplePlugins.Plugins;
 using Aimitra.SemanticRouteService;
+using Aimitra.Services.Metadata;
+using Aimitra.Services.Orchestration;
+using Aimitra.Services.Plugins;
+#pragma warning disable SKEXP0001
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.Google;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
+#pragma warning restore SKEXP0001
 
-using System;
-using System.Diagnostics;
-using System.IO;
-using System.Text.Json;
-using OpenTelemetry;
-using OpenTelemetry.Trace;
 
 
 namespace Aimitra.ConsoleApp
@@ -46,50 +28,6 @@ namespace Aimitra.ConsoleApp
 
         static async Task Main(string[] args)
         {
-
-
-//========================================
-//==================================
-
-// 1. Setup a custom JSON trace stream
-var logFilePath = "semantic_kernel_trace.json";
-using var streamWriter = new StreamWriter(logFilePath, append: false);
-
-// 2. Build the OpenTelemetry Tracer Provider
-using var tracerProvider = Sdk.CreateTracerProviderBuilder()
-    .AddSource("Microsoft.SemanticKernel*") // Captures all SK Agent activities
-    //.AddInMemoryExporter(new List<Activity>()) // Or a custom processor to dump JSON
-    .Build();
-
-// 3. Simple ActivityListener trick to save JSON directly to a file
-using var listener = new ActivityListener
-{
-    ShouldListenTo = (source) => source.Name.StartsWith("Microsoft.SemanticKernel"),
-    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData,
-    ActivityStopped = activity =>
-    {
-        var traceData = new
-        {
-            TraceId = activity.TraceId.ToString(),
-            SpanId = activity.SpanId.ToString(),
-            ParentSpanId = activity.ParentSpanId.ToString(),
-            Name = activity.DisplayName,
-            StartTime = activity.StartTimeUtc,
-            Duration = activity.Duration,
-            Attributes = activity.TagObjects
-        };
-        
-        // Write each span serialized as JSON
-        streamWriter.WriteLine(JsonSerializer.Serialize(traceData));
-    }
-};
-
-ActivitySource.AddActivityListener(listener);
-
-// --- Execute your Semantic Kernel Agent code here ---
-
-//========================================
-
             var environmentName = Environment.GetEnvironmentVariable("AIMITRA_ENVIRONMENT")?.Trim();
             EnvFileLoader.Load(environmentName);
 
@@ -116,7 +54,7 @@ ActivitySource.AddActivityListener(listener);
             var provider = Environment.GetEnvironmentVariable("DB_PROVIDER")?.Trim().ToLowerInvariant();
             var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
 
-            var presidioEndpoint = Environment.GetEnvironmentVariable("PRESIDIO_ENDPOINT");
+            var presidioEndpoint = Environment.GetEnvironmentVariable("PRESIDIO_ENDPOINT") ?? string.Empty;
             Console.WriteLine($"Using environment: {environmentName}");
             Console.WriteLine($"Using OpenAI URL: {openAIURL}");
             Console.WriteLine($"Using OpenAI Model: {openAIModel}");
@@ -153,41 +91,66 @@ ActivitySource.AddActivityListener(listener);
             //     schema = BuildSampleSchema();
             // }
 
-            using (var httpClient = new HttpClient())
+            // --- Build topics: each maps a domain description to its scoped plugin set ---
+            var topics = new Topic[]
             {
-                
-                string userQuestion ="Predict Yashpal sharma future performance using astrology."; //"Give me the name of highest scorer in leaderboard inside the SalesforceCoder database?"; //"Greet Yashpal Sharma?";
-                string routeAgent= getRouteForQuestion(userQuestion).Result;
+                new Topic(
+                    Name:        "DatabaseTools",
+                    Description: "Answer questions about databases, generate SQL queries, retrieve schema " +
+                                 "information, or solve problems stored in database tables.",
+                    Actions:     new[] { KernelPluginFactory.CreateFromObject(new DatabasePlugin(), "DatabaseTools") }),
 
-              //  return;
-            
-                var orchestrator = new SemanticKernelOrchestrator(routeAgent,apiKey, openAIModel, openAIURL, presidioEndpoint);
+                new Topic(
+                    Name:        "GreetingPlugin",
+                    Description: "Send a friendly greeting or welcome message to a user by name. " +
+                                 "Use this for any request that is purely a greeting with no database operation.",
+                    Actions:     new[] { KernelPluginFactory.CreateFromObject(new SampleGreetingPlugin(), "GreetingTools") }),
 
-                //var question = "List each customer and their total order amount for orders placed in the last 30 days.";
-                var question = "give solution of any problem from the problems stored in database table";
-     
+                new Topic(
+                    Name:        "AstrologerPlugin",
+                    Description: "Provide astrological readings, horoscopes, or future predictions for a person " +
+                                 "based on their name and date of birth.",
+                    Actions:     new[] { KernelPluginFactory.CreateFromObject(new AstrologerPlugin(), "AstrologyTools") }),
+            };
+
+            // Create the orchestrator once with all topics
+            var orchestrator = new SemanticKernelOrchestrator(
+                routeAgent:       "topic_selector",
+                apiKey:           apiKey,
+                model:            openAIModel,
+                endpoint:         openAIURL,
+                presidioEndpoint: presidioEndpoint,
+                topics:           topics);
+
+            // --- Multi-turn conversation loop ---
+            Console.WriteLine();
+            Console.WriteLine("Aimitra ready. Type a message and press Enter. Leave blank to exit.");
+            Console.WriteLine(new string('-', 60));
+
+            while (true)
+            {
+                await Task.Delay(30000);
+                Console.Write("You: ");
+                var userInput = Console.ReadLine();
+
+                if (string.IsNullOrWhiteSpace(userInput))
+                    break;
+
                 try
                 {
-                    DatabaseSchema schema = BuildSampleSchema();
-                    var result = await orchestrator.GenerateSqlFromQuestionAsync(question, schema).ConfigureAwait(false);
+                    var (selectedTopic, response) = await orchestrator
+                        .RunTopicRoutedAsync(userInput)
+                        .ConfigureAwait(false);
 
-                    Console.WriteLine("=== Generated SQL ===");
-                    Console.WriteLine(result.SqlQuery);
+                    var topicLabel = selectedTopic?.Name ?? "(no topic matched)";
                     Console.WriteLine();
-                    Console.WriteLine("=== Raw response ===");
-                    Console.WriteLine(result.RawResponse);
-                    Console.WriteLine();
-                    Console.WriteLine("=== Reasoning trace ===");
-                    foreach (var step in result.Trace)
-                    {
-                        Console.WriteLine(step);
-                    }
+                    Console.WriteLine($"[Topic: {topicLabel}]");
+                    Console.WriteLine($"Agent: {response}");
+                    Console.WriteLine(new string('-', 60));
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Reasoning failed:");
-                    Console.WriteLine(ex.ToString());
-                    return;
+                    Console.WriteLine($"Error: {ex.Message}");
                 }
             }
         }
@@ -251,10 +214,12 @@ ActivitySource.AddActivityListener(listener);
                     string geminiApiKey = Environment.GetEnvironmentVariable("API_KEY") ?? "YOUR_KEY";
 
 // 1. Initialize our localized embedding engine
+#pragma warning disable SKEXP0070
         var embeddingService = new GoogleAITextEmbeddingGenerationService(
             modelId: "gemini-embedding-001", 
             apiKey: geminiApiKey
         );
+#pragma warning restore SKEXP0070
 
         // 2. Instantiate and configure the router with an intentional threshold
         var router = new SemanticRouter(embeddingService, scoreThreshold: 0.52f);
@@ -294,7 +259,7 @@ ActivitySource.AddActivityListener(listener);
             string targetRoute = await router.RouteAsync(query);
             
             Console.WriteLine($"🔀 Route Selected: [{targetRoute}]");
-            return targetRoute?.ToString();
+            return targetRoute?.ToString() ?? string.Empty;
             // Execute conditional code loops safely based on exact intent
 //            ExecuteTargetPipeline(targetRoute, query);
         }

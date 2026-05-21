@@ -81,11 +81,14 @@ namespace Aimitra.Services.Orchestration
             // builder.AppendLine("4. Each object must have \"step\" (integer) and \"content\" (string) fields.");
             // builder.AppendLine("5. Number steps sequentially starting from 1.");
             // builder.AppendLine("</CRITICAL_INSTRUCTION>");
-            builder.AppendLine("Do not write down plans, text steps, or mock schemas. If you need information about a database schema or need to run a query, you must execute the corresponding tool immediately. Wait for the tool's output before continuing your analysis.");
+            builder.AppendLine("Do not write down plans, text steps, or mock schemas. if you need addtional information, you must execute the corresponding tool immediately. Wait for the tool's output before continuing your analysis.");
             builder.AppendLine();
             builder.AppendLine("User Question:");
+            builder.AppendLine("Predict Yashpal sharma future performance using astrology. He isnot any known personality but just a regular person but still try to predict his future performance using astrology based on his name and method available in tools to get his dob to take more precise predictions.");
             //builder.AppendLine("Generate a sample solution for problem where Id is 7 from the problems stored inside the SalesforceCoder database.");
-            builder.AppendLine("Give me the name of highest scorer in leaderboard inside the SalesforceCoder database.");
+            //builder.AppendLine("Give me the name of highest scorer in leaderboard inside the SalesforceCoder database.");
+            //builder.AppendLine("Friendly greeting for the Yashpal Sharma no need to check database or execute sql query just send a simple greeting. and also let me know if you have used the greeting plugin or not.");
+            
             builder.AppendLine();
             if (history != null && history.Count > 0)
             {

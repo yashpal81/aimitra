@@ -17,6 +17,14 @@ using System.Text.RegularExpressions;
 using Aimitra.Services.Plugins;
 using Aimitra.Security;
 using Microsoft.Extensions.DependencyInjection;
+using System.Net.Http.Headers;
+
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Text.Json;
+using OpenTelemetry;
+using OpenTelemetry.Trace;
 
 namespace Aimitra.Services.Orchestration
 {
@@ -43,13 +51,16 @@ public class ActionCall
         private readonly string _apiKey;
         private readonly Uri _endpoint;
         private readonly string _presidioEndpoint;
-
-        public SemanticKernelOrchestrator(string apiKey, string model, string endpoint, string presidioEndpoint)
+        private readonly KernelPluginLoader _pluginLoader;
+        private readonly string _routeAgent;
+        public SemanticKernelOrchestrator(string routeAgent, string apiKey, string model, string endpoint, string presidioEndpoint)
         {
             _apiKey = string.IsNullOrWhiteSpace(apiKey) ? throw new ArgumentException("API key cannot be empty.", nameof(apiKey)) : apiKey;
             _model = string.IsNullOrWhiteSpace(model) ? throw new ArgumentException("Model cannot be empty.", nameof(model)) : model;
             _endpoint = new Uri(endpoint);
             _presidioEndpoint = string.IsNullOrWhiteSpace(presidioEndpoint) ? throw new ArgumentException("Presidio endpoint cannot be empty.", nameof(presidioEndpoint)) : presidioEndpoint;
+            _pluginLoader = new KernelPluginLoader(KernelPluginOptions.FromEnvironment());
+            _routeAgent = string.IsNullOrWhiteSpace(routeAgent) ? throw new ArgumentException("Route agent cannot be empty.", nameof(routeAgent)) : routeAgent;
         }
 
         public async Task<ReasoningResult> GenerateSqlFromQuestionAsync(string question, DatabaseSchema schema, CancellationToken cancellationToken = default)
@@ -86,9 +97,36 @@ public class ActionCall
             // Register as both the INBOUND and OUTBOUND filter interceptor
             builder.Services.AddSingleton<IFunctionInvocationFilter>(maskingEngine);
             builder.Services.AddSingleton<IAutoFunctionInvocationFilter>(maskingEngine);
+            builder.Services.AddSingleton<IPromptRenderFilter>(maskingEngine);
             var kernel =builder.AddOpenAIChatCompletion(_model, _endpoint, _apiKey, string.Empty,provider , null).Build();
-            kernel.Plugins.AddFromType<DatabasePlugin>("DatabaseTools");
+            Console.WriteLine("Kernel built with OpenAI Chat Completion service.");
+            Console.WriteLine(_routeAgent);
+            switch(_routeAgent)
+            {
+                case "DatabaseTools":
+                
+                    Console.WriteLine("Registering DatabaseTools    ...");
+                    kernel.Plugins.AddFromType<DatabasePlugin>("DatabaseTools");
+                    break;
+                case "AstrologerPlugin":
+                    Console.WriteLine("Registering AstrologerPlugin...");
+                    //kernel.Plugins.AddFromType<AstrologerPlugin>("AstrologyTools");
+                    _pluginLoader.RegisterConfiguredPlugins(kernel);
+                    break;
+                case "GreetingPlugin":
+                    Console.WriteLine("Registering GreetingPlugin...");
+                    //kernel.Plugins.AddFromType<GreetingPlugin>("GreetingTools");
+                    _pluginLoader.RegisterConfiguredPlugins(kernel);
+                    break;    
+                default:
+                    _pluginLoader.RegisterConfiguredPlugins(kernel);
+                    Console.WriteLine($"Unknown route agent specified: {_routeAgent}. No plugins will be registered.");
+                    return new ReasoningResult(string.Empty, string.Empty, $"Unknown route agent specified: {_routeAgent}. No plugins will be registered.", history);
+                    break;
+           }
 
+            kernel.Plugins.AddFromType<DatabasePlugin>("DatabaseTools");
+            
             var chat = kernel.GetRequiredService<Microsoft.SemanticKernel.ChatCompletion.IChatCompletionService>();
 
 
@@ -98,13 +136,16 @@ public class ActionCall
             {
                 Console.WriteLine($"Iteration {iteration + 1}/{MaxIterations}");
                 var prompt = DatabaseQueryTool.BuildSemanticPrompt(question, schema, history);
+                
                 var chatHistory = new Microsoft.SemanticKernel.ChatCompletion.ChatHistory();
+                prompt =maskingEngine.maskPrompt(prompt).Result;
                 chatHistory.AddUserMessage(prompt);
+
                 var result = await chat.GetChatMessageContentAsync(chatHistory,executionSettings: settings, kernel: kernel, cancellationToken: cancellationToken).ConfigureAwait(false);
                 rawResponse = result?.Content ?? string.Empty;
                // var plan = ParseActionPlan(rawResponse);
                Console.WriteLine("Parsing steps response..."+rawResponse);
-      
+               rawResponse= maskingEngine.unmaskResult(rawResponse).Result; 
             }
 
  

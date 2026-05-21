@@ -30,6 +30,12 @@ using Microsoft.SemanticKernel.Connectors.Google;
 using System.Security.Cryptography;
 using Aimitra.SemanticRouteService;
 
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Text.Json;
+using OpenTelemetry;
+using OpenTelemetry.Trace;
 
 
 namespace Aimitra.ConsoleApp
@@ -40,6 +46,50 @@ namespace Aimitra.ConsoleApp
 
         static async Task Main(string[] args)
         {
+
+
+//========================================
+//==================================
+
+// 1. Setup a custom JSON trace stream
+var logFilePath = "semantic_kernel_trace.json";
+using var streamWriter = new StreamWriter(logFilePath, append: false);
+
+// 2. Build the OpenTelemetry Tracer Provider
+using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+    .AddSource("Microsoft.SemanticKernel*") // Captures all SK Agent activities
+    //.AddInMemoryExporter(new List<Activity>()) // Or a custom processor to dump JSON
+    .Build();
+
+// 3. Simple ActivityListener trick to save JSON directly to a file
+using var listener = new ActivityListener
+{
+    ShouldListenTo = (source) => source.Name.StartsWith("Microsoft.SemanticKernel"),
+    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData,
+    ActivityStopped = activity =>
+    {
+        var traceData = new
+        {
+            TraceId = activity.TraceId.ToString(),
+            SpanId = activity.SpanId.ToString(),
+            ParentSpanId = activity.ParentSpanId.ToString(),
+            Name = activity.DisplayName,
+            StartTime = activity.StartTimeUtc,
+            Duration = activity.Duration,
+            Attributes = activity.TagObjects
+        };
+        
+        // Write each span serialized as JSON
+        streamWriter.WriteLine(JsonSerializer.Serialize(traceData));
+    }
+};
+
+ActivitySource.AddActivityListener(listener);
+
+// --- Execute your Semantic Kernel Agent code here ---
+
+//========================================
+
             var environmentName = Environment.GetEnvironmentVariable("AIMITRA_ENVIRONMENT")?.Trim();
             EnvFileLoader.Load(environmentName);
 

@@ -4,6 +4,8 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="3.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
     <PackageReference Include="Npgsql" Version="4.1.11" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.15.3" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
     <PackageReference Include="System.Text.Json" Version="8.0.4" />
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.21.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.21.0-alpha" />

@@ -11,7 +11,7 @@ class ScanRequest(BaseModel):
 
 @app.post("/scan")
 def scan_text(request: ScanRequest):
-    results = analyzer.analyze(text=request.text, entities=['PERSON', 'EMAIL_ADDRESS'], language='en')
+    results = analyzer.analyze(text=request.text, entities=['PERSON', 'EMAIL_ADDRESS', 'CREDIT_CARD', 'PHONE_NUMBER','IP_ADDRESS','LOCATION','ORGANIZATION','GENERIC',''], language='en')
     # Return serializable JSON metadata back to C#
     return [{"entity": r.entity_type, "start": r.start, "end": r.end} for r in results]
 

@@ -1,0 +1,174 @@
+@page "/agent-designer"
+@using Aimitra.WebChat.Models
+@inject Aimitra.WebChat.Services.AgentDefinitionStore DefinitionStore
+
+<div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+    <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/50">
+        <div class="mb-6">
+            <p class="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-700">Aimitra Designer</p>
+            <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Custom Agent Builder</h1>
+            <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                Define a new agent group, organize it into topics, attach kernel functions to each topic, and save the structure as JSON.
+            </p>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+            <section class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <label class="mb-4 block">
+                    <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Agent Group Name</span>
+                    <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                           @bind="agent.Name"
+                           @bind:event="oninput"
+                           placeholder="e.g. Finance Assistant" />
+                </label>
+
+                <div class="mb-4 flex items-center justify-between">
+                    <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Topics</h2>
+                    <button class="rounded-xl bg-cyan-600 px-3 py-2 text-xs font-semibold text-white hover:bg-cyan-500"
+                            @onclick="AddTopic">
+                        Add Topic
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    @for (var i = 0; i < agent.Topics.Count; i++)
+                    {
+                        var topic = agent.Topics[i];
+                        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <div class="mb-3 flex items-center justify-between">
+                                <h3 class="text-sm font-semibold text-slate-800">Topic @(i + 1)</h3>
+                                <button class="text-xs font-semibold text-rose-600 hover:text-rose-500"
+                                        @onclick="() => RemoveTopic(i)">
+                                    Remove
+                                </button>
+                            </div>
+
+                            <div class="space-y-3">
+                                <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                                       @bind="topic.Name"
+                                       @bind:event="oninput"
+                                       placeholder="Topic name" />
+
+                                <textarea class="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                                          rows="3"
+                                          @bind="topic.Description"
+                                          @bind:event="oninput"
+                                          placeholder="Topic description"></textarea>
+
+                                <div>
+                                    <div class="mb-2 flex items-center justify-between">
+                                        <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Kernel Functions</span>
+                                        <span class="text-xs text-slate-400">@topic.KernelFunctions.Count selected</span>
+                                    </div>
+
+                                    <div class="grid gap-2 sm:grid-cols-2">
+                                        @foreach (var option in availableKernelFunctions)
+                                        {
+                                            <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 hover:border-cyan-300 hover:bg-cyan-50">
+                                                <input type="checkbox"
+                                                       class="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                                                       checked="@topic.KernelFunctions.Contains(option.FullName)"
+                                                       @onchange="() => ToggleKernelFunction(topic, option.FullName)" />
+                                                <span class="min-w-0">
+                                                    <span class="block text-sm font-medium text-slate-800">@option.DisplayName</span>
+                                                    <span class="block text-xs text-slate-500">@option.FullName</span>
+                                                </span>
+                                            </label>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </section>
+
+            <section class="rounded-2xl border border-slate-200 bg-white p-5">
+                <div class="mb-4 flex items-center justify-between">
+                    <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Preview</h2>
+                    <button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+                            @onclick="Save">
+                        Save as JSON
+                    </button>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 bg-slate-950 p-4">
+                    <pre class="max-h-[36rem] overflow-auto text-xs leading-6 text-slate-100">@previewJson</pre>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(status))
+                {
+                    <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                        @status
+                    </div>
+                }
+            </section>
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly List<KernelFunctionOption> availableKernelFunctions = new()
+    {
+        new() { DisplayName = "Database Tools - Get Schema", FullName = "DatabaseTools.GetDatabaseSchema", Group = "DatabaseTools" },
+        new() { DisplayName = "Database Tools - Execute SQL", FullName = "DatabaseTools.ExecuteSql", Group = "DatabaseTools" },
+        new() { DisplayName = "Verification - Verify Customer", FullName = "VerificationPlugin.verify_customer", Group = "Verification" },
+        new() { DisplayName = "Navigation - Go Back", FullName = "NavigationPlugin.go_back", Group = "Navigation" },
+        new() { DisplayName = "Guardrail - Inappropriate Content", FullName = "InappropriateContentGuardrail.Inappropriate_Content", Group = "Guardrails" },
+        new() { DisplayName = "Guardrail - Prompt Injection", FullName = "PromptInjectionGuardrail.Prompt_Injection", Group = "Guardrails" },
+        new() { DisplayName = "Greeting - Greet", FullName = "SampleGreetingPlugin.Greet", Group = "SamplePlugins" },
+        new() { DisplayName = "Astrology - Reading", FullName = "AstrologerPlugin.GetAstrologicalReading", Group = "SamplePlugins" },
+        new() { DisplayName = "Astrology - Get DOB", FullName = "AstrologerPlugin.GetDateOfBirth", Group = "SamplePlugins" }
+    };
+
+    private AgentDefinition agent = new()
+    {
+        Name = "New Agent Group",
+        Topics = new List<TopicDefinition>
+        {
+            new()
+            {
+                Name = "Default Topic",
+                Description = "Describe the topic and the intended action boundary.",
+                KernelFunctions = new List<string> { "DatabaseTools.RunSql" }
+            }
+        }
+    };
+
+    private string status = string.Empty;
+
+    private string previewJson => System.Text.Json.JsonSerializer.Serialize(agent, new System.Text.Json.JsonSerializerOptions
+    {
+        WriteIndented = true
+    });
+
+    private void AddTopic()
+    {
+        agent.Topics.Add(new TopicDefinition());
+    }
+
+    private void RemoveTopic(int index)
+    {
+        if (index >= 0 && index < agent.Topics.Count)
+        {
+            agent.Topics.RemoveAt(index);
+        }
+    }
+
+    private void ToggleKernelFunction(TopicDefinition topic, string functionName)
+    {
+        if (topic.KernelFunctions.Contains(functionName))
+        {
+            topic.KernelFunctions.Remove(functionName);
+            return;
+        }
+
+        topic.KernelFunctions.Add(functionName);
+    }
+
+    private void Save()
+    {
+        var filePath = DefinitionStore.Save(agent);
+        status = $"Saved JSON to {filePath}";
+    }
+}

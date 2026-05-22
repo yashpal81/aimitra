@@ -7,6 +7,7 @@ using Aimitra.Services.Orchestration;
 using Aimitra.Services.Plugins;
 using Aimitra.SamplePlugins.Plugins;
 using Microsoft.SemanticKernel;
+using Aimitra.WebChat.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,28 +24,14 @@ var routeAgent = Environment.GetEnvironmentVariable("ROUTE_AGENT") ?? "topic_sel
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<AgentDefinitionStore>();
+builder.Services.AddSingleton<AgentDefinitionLoader>();
 
 // Register SemanticKernelOrchestrator and TopicOrchestrator as singletons
 builder.Services.AddSingleton(sp =>
 {
-    // Build the topics similar to Console app
-    var topics = new Topic[]
-    {
-        new Topic(
-            Name: "DatabaseTools",
-            Description: "Answer questions about databases, generate SQL queries, retrieve schema information.",
-            Actions: new[] { KernelPluginFactory.CreateFromObject(new DatabasePlugin(), "DatabaseTools") }),
-
-        new Topic(
-            Name: "GreetingPlugin",
-            Description: "Send a friendly greeting or welcome message to a user by name.",
-            Actions: new[] { KernelPluginFactory.CreateFromObject(new SampleGreetingPlugin(), "GreetingTools") })//,
-
-        // new Topic(
-        //     Name: "AstrologerPlugin",
-        //     Description: "Provide astrological readings or horoscopes for a person.",
-        //     Actions: new[] { KernelPluginFactory.CreateFromObject(new Aimitra.Services.Plugins.AstrologerPlugin(), "AstrologyTools") })
-    };
+    var loader = sp.GetRequiredService<AgentDefinitionLoader>();
+    var topics = loader.LoadActiveTopics();
 
     var kernelOrchestrator = new SemanticKernelOrchestrator(routeAgent, apiKey, openAIModel, openAIUrl, presidioEndpoint, topics);
     return kernelOrchestrator;

@@ -49,6 +49,9 @@ public class ActionCall
         private readonly string _routeAgent;
         private readonly IReadOnlyList<Topic> _topics;
 
+        /// <summary>The topics registered with this orchestrator.</summary>
+        public IReadOnlyList<Topic> Topics => _topics;
+
         public SemanticKernelOrchestrator(string routeAgent, string apiKey, string model, string endpoint, string presidioEndpoint)
             : this(routeAgent, apiKey, model, endpoint, presidioEndpoint, topics: null) { }
 
@@ -180,20 +183,33 @@ public class ActionCall
         // ----------------------------------------------------------------
 
         /// <summary>
-        /// Uses the configured LLM to select the best matching <see cref="Topic"/> for
-        /// <paramref name="userPrompt"/> by offering each topic as a callable routing function.
-        ///
-        /// The LLM calls exactly one function — that invocation IS the routing decision.
-        /// This mirrors the trace's topic_selector agent which routes by tool-call, not
-        /// by embedding similarity alone.
+        /// Uses the configured LLM to select the single best matching <see cref="Topic"/>.
+        /// Delegates to <see cref="SelectTopicsAsync"/> and returns the first result.
         /// </summary>
         public async Task<Topic?> SelectTopicAsync(
             string userPrompt,
             CancellationToken cancellationToken = default)
         {
-            if (_topics.Count == 0) return null;
+            var topics = await SelectTopicsAsync(userPrompt, cancellationToken).ConfigureAwait(false);
+            return topics.Count > 0 ? topics[0] : null;
+        }
 
-            string? selectedTopicName = null;
+        /// <summary>
+        /// Uses the configured LLM to select ALL topics needed to fully answer
+        /// <paramref name="userPrompt"/>, returned in the order they should be executed.
+        ///
+        /// For a query like "predict the future of the top scorer in the database" the
+        /// LLM will call two routing functions — DatabaseTools first (to look up the name)
+        /// then AstrologerPlugin second (to generate the prediction). Each function-call
+        /// IS the routing decision; call order becomes execution order.
+        /// </summary>
+        public async Task<IReadOnlyList<Topic>> SelectTopicsAsync(
+            string userPrompt,
+            CancellationToken cancellationToken = default)
+        {
+            if (_topics.Count == 0) return Array.Empty<Topic>();
+
+            var selectedNames = new List<string>();
 
             // Routing kernel — LLM + one KernelFunction per topic, no domain tools
             var builder = Kernel.CreateBuilder();
@@ -202,41 +218,51 @@ public class ActionCall
                 .AddOpenAIChatCompletion(_model, _endpoint, _apiKey, string.Empty, "OpenAI", null)
                 .Build();
 
-            // One routing function per topic; closure captures the name when called
+            // Each routing function appends its name to selectedNames in call order
             var routingFunctions = new List<KernelFunction>();
             foreach (var topic in _topics)
             {
                 var capturedName = topic.Name;
                 routingFunctions.Add(KernelFunctionFactory.CreateFromMethod(
-                    method:       () => { selectedTopicName = capturedName; return capturedName; },
+                    method:       () => { if (!selectedNames.Contains(capturedName)) selectedNames.Add(capturedName); return capturedName; },
                     functionName: Regex.Replace(capturedName, @"[^a-zA-Z0-9_]", "_"),
                     description:  topic.Description));
             }
 
             routingKernel.Plugins.Add(
                 KernelPluginFactory.CreateFromFunctions("TopicRouter",
-                    description: "Routes the user message to the correct topic.",
+                    description: "Routes the user message to the required topics.",
                     functions:   routingFunctions));
 
             var chat = routingKernel.GetRequiredService<IChatCompletionService>();
             var history = new ChatHistory(
-                "You are a topic selector. Call the single function whose description best " +
-                "matches the user's message. Call exactly one function then stop. Do not use your own data for answering alway look for data from prompt itself or tools in topics.");
+                "You are a topic router. Analyse the user request carefully.\n" +
+                "• If the request can be answered by a SINGLE topic, call that one function.\n" +
+                "• If the request SPANS multiple topics (e.g. look up data from a database " +
+                "AND THEN use that result for a prediction or other action), call ALL required " +
+                "topic functions IN THE ORDER they must be executed — the output of each step " +
+                "feeds into the next.\n" +
+                "Do NOT produce any text — only function calls.");
             history.AddUserMessage(userPrompt);
 
             var settings = new OpenAIPromptExecutionSettings
             {
                 FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(),
-                MaxTokens = 200
+                MaxTokens = 300
             };
 
+            // SK's Auto function-call loop runs until the LLM stops calling functions
             await chat.GetChatMessageContentAsync(
                 history,
                 executionSettings: settings,
                 kernel: routingKernel,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            return _topics.FirstOrDefault(t => t.Name == selectedTopicName);
+            // Preserve call order
+            return _topics
+                .Where(t => selectedNames.Contains(t.Name))
+                .OrderBy(t => selectedNames.IndexOf(t.Name))
+                .ToList();
         }
 
         // ----------------------------------------------------------------
@@ -256,7 +282,8 @@ public class ActionCall
             Topic topic,
             CancellationToken cancellationToken = default)
         {
-            await Task.Delay(30000);
+            Console.WriteLine($"Running with topic with 20sec wait: {topic.Name}");
+            await Task.Delay(20000);
             if (topic == null) throw new ArgumentNullException(nameof(topic));
 
             var maskingEngine = new PiiMaskingEngine(_presidioEndpoint);
@@ -315,33 +342,134 @@ public class ActionCall
         }
 
         // ----------------------------------------------------------------
-        // Combined: route → scoped execute
+        // Combined: route → chain execute → synthesise
         // ----------------------------------------------------------------
 
         /// <summary>
-        /// Selects the best <see cref="Topic"/> for <paramref name="userPrompt"/> and
-        /// executes the ReAct loop with only that topic's Actions visible to the model.
+        /// Selects all required <see cref="Topic"/>s for <paramref name="userPrompt"/>,
+        /// executes them in order (each step receives the accumulated context from
+        /// previous steps), then synthesises a final answer when more than one topic
+        /// was involved.
         ///
-        /// Returns the selected topic alongside the response so the caller can log the
-        /// routing decision (the TransitionStep equivalent from the trace).
-        /// Falls back to <see cref="GenerateSqlFromQuestionAsync"/> behaviour when no
-        /// topics are registered.
+        /// Example: "predict the future of the top scorer in the salesforcecoder leaderboard"
+        ///   Step 1 — DatabaseTools: fetches the top scorer's name from the DB.
+        ///   Step 2 — AstrologerPlugin: uses that name to generate the prediction.
+        ///   Synthesis: combines both results into a coherent final answer.
         /// </summary>
-        public async Task<(Topic? SelectedTopic, string Response)> RunTopicRoutedAsync(
+        public async Task<(IReadOnlyList<Topic> SelectedTopics, string Response)> RunTopicRoutedAsync(
             string userPrompt,
             CancellationToken cancellationToken = default)
         {
-            var topic = await SelectTopicAsync(userPrompt, cancellationToken).ConfigureAwait(false);
+            var topics = await SelectTopicsAsync(userPrompt, cancellationToken).ConfigureAwait(false);
 
-            if (topic == null)
+            if (topics.Count == 0)
             {
                 Console.WriteLine("[TopicRouter] No topic matched — no topics registered.");
-                return (null, "No topic could be selected for this request.");
+                return (Array.Empty<Topic>(), "No topic could be selected for this request.");
             }
 
-            Console.WriteLine($"[TopicRouter] Selected topic: '{topic.Name}'");
-            var response = await RunWithTopicAsync(userPrompt, topic, cancellationToken).ConfigureAwait(false);
-            return (topic, response);
+            if (topics.Count == 1)
+            {
+                Console.WriteLine($"[TopicRouter] Single topic: '{topics[0].Name}'");
+                var resp = await RunWithTopicAsync(userPrompt, topics[0], cancellationToken).ConfigureAwait(false);
+                return (topics, resp);
+            }
+
+            // --- Multi-topic chaining ---
+            Console.WriteLine($"[TopicRouter] Multi-topic pipeline ({topics.Count} steps): {string.Join(" → ", topics.Select(t => t.Name))}");
+
+            var stepResults = new List<(string TopicName, string Result)>();
+
+            for (int i = 0; i < topics.Count; i++)
+            {
+                await Task.Delay(20000);
+                var topic = topics[i];
+                Console.WriteLine($"[TopicRouter] Step {i + 1}/{topics.Count}: '{topic.Name}'");
+
+                // First step uses original prompt; subsequent steps append accumulated context
+                string stepPrompt = i == 0
+                    ? userPrompt
+                    : BuildChainedPrompt(userPrompt, stepResults);
+
+                var stepResult = await RunWithTopicAsync(stepPrompt, topic, cancellationToken).ConfigureAwait(false);
+                stepResults.Add((topic.Name, stepResult));
+
+                Console.WriteLine($"[TopicRouter] Step {i + 1} result: {stepResult}");
+            }
+
+            // Synthesise a single coherent answer from all step results
+            var finalResponse = await SynthesizeResponseAsync(userPrompt, stepResults, cancellationToken).ConfigureAwait(false);
+            return (topics, finalResponse);
+        }
+
+        /// <summary>
+        /// Builds the prompt for step N (1-based) of a multi-topic chain by appending the
+        /// results gathered so far so the model has full context.
+        /// </summary>
+        private static string BuildChainedPrompt(
+            string originalPrompt,
+            IReadOnlyList<(string TopicName, string Result)> priorResults)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine(originalPrompt);
+            sb.AppendLine();
+            sb.AppendLine("--- Context gathered by earlier steps ---");
+            foreach (var (name, result) in priorResults)
+                sb.AppendLine($"[{name}]: {result}");
+            sb.AppendLine("--- Use the above context to complete your part of the task ---");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Calls the LLM to produce one coherent final answer that integrates the results
+        /// from all chained topic steps.
+        /// </summary>
+        private async Task<string> SynthesizeResponseAsync(
+            string originalPrompt,
+            IReadOnlyList<(string TopicName, string Result)> stepResults,
+            CancellationToken cancellationToken = default)
+        {
+            var builder = Kernel.CreateBuilder();
+            var synthesisKernel = builder
+                .AddOpenAIChatCompletion(_model, _endpoint, _apiKey, string.Empty, "OpenAI", null)
+                .Build();
+
+            var chat = synthesisKernel.GetRequiredService<IChatCompletionService>();
+
+            var contextBlock = new StringBuilder();
+            foreach (var (name, result) in stepResults)
+                contextBlock.AppendLine($"[{name}]: {result}");
+            Console.WriteLine("========================================================= \n"+
+                                "Synthesizing final response from context:\n" +
+                                "========================================================= \n" 
+                                );    
+            var history = new ChatHistory(
+                "You are a helpful assistant. You have been given the results of a multi-step " +
+                "pipeline that was executed to answer the user's request. " +
+                "Write a single, clear, complete response that combines all the information. " +
+                "Do not mention the pipeline or the step names. Do not include any of the internal thought process, only the final answer for the user.");
+            history.AddUserMessage(
+                $"Original request: {originalPrompt}\n\n" +
+                $"Step results:\n{contextBlock}");
+
+            var settings = new OpenAIPromptExecutionSettings { MaxTokens = 1000 };
+
+            try
+            {
+                var result = await chat.GetChatMessageContentAsync(
+                    history,
+                    executionSettings: settings,
+                    kernel: synthesisKernel,
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                return result?.Content ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Synthesis] Failed: {ex.Message}");
+                // Fallback: concatenate step results
+                return string.Join("\n\n", stepResults.Select(r => $"{r.TopicName}: {r.Result}"));
+            }
         }
 
     }

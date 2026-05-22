@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -113,8 +114,8 @@ namespace Aimitra.ConsoleApp
                     Actions:     new[] { KernelPluginFactory.CreateFromObject(new AstrologerPlugin(), "AstrologyTools") }),
             };
 
-            // Create the orchestrator once with all topics
-            var orchestrator = new SemanticKernelOrchestrator(
+            // Create the kernel orchestrator (routing + LLM execution)
+            var kernelOrchestrator = new SemanticKernelOrchestrator(
                 routeAgent:       "topic_selector",
                 apiKey:           apiKey,
                 model:            openAIModel,
@@ -122,14 +123,18 @@ namespace Aimitra.ConsoleApp
                 presidioEndpoint: presidioEndpoint,
                 topics:           topics);
 
+            // Wrap in TopicOrchestrator — adds cross-turn ConversationState
+            // Pass domain ITopicAgent implementations here when they exist (Phase 3).
+            var orchestrator = new TopicOrchestrator(kernelOrchestrator);
+
             // --- Multi-turn conversation loop ---
             Console.WriteLine();
+            Console.WriteLine($"Session: {orchestrator.State.SessionId}");
             Console.WriteLine("Aimitra ready. Type a message and press Enter. Leave blank to exit.");
             Console.WriteLine(new string('-', 60));
 
             while (true)
             {
-                await Task.Delay(30000);
                 Console.Write("You: ");
                 var userInput = Console.ReadLine();
 
@@ -138,13 +143,21 @@ namespace Aimitra.ConsoleApp
 
                 try
                 {
-                    var (selectedTopic, response) = await orchestrator
-                        .RunTopicRoutedAsync(userInput)
+                    var response = await orchestrator
+                        .RunTurnAsync(userInput)
                         .ConfigureAwait(false);
 
-                    var topicLabel = selectedTopic?.Name ?? "(no topic matched)";
+                    // Show active topic and transition chain
+                    var lastTransitions = orchestrator.TransitionLog
+                        .TakeLast(topics.Length)
+                        .Select(t => t.ToAgent ?? t.FromAgent)
+                        .Distinct();
+                    var pipelineLabel = orchestrator.State.CurrentTopic.Length > 0
+                        ? orchestrator.State.CurrentTopic
+                        : "(no topic)";
+
                     Console.WriteLine();
-                    Console.WriteLine($"[Topic: {topicLabel}]");
+                    Console.WriteLine($"[Topic: {pipelineLabel} | Visited: {string.Join(", ", orchestrator.State.VisitedAgents.Keys)}]");
                     Console.WriteLine($"Agent: {response}");
                     Console.WriteLine(new string('-', 60));
                 }

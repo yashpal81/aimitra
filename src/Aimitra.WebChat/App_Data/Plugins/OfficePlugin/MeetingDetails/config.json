@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "description": "Extracts meeting details from a user request to help schedule it.",
+  "execution_settings": {
+    "default": {
+      "max_tokens": 500,
+      "temperature": 0.3
+    }
+  },
+  "input_variables": [
+    {
+      "name": "input",
+      "description": "The raw text or request from the user containing meeting details.",
+      "required": true
+    },
+    {
+      "name": "currentDateTime",
+      "description": "The current date and time to anchor relative dates like 'tomorrow' or 'next Monday'.",
+      "required": false
+    }
+  ]
+}

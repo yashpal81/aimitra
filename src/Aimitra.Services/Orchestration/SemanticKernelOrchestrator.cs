@@ -70,6 +70,8 @@ public class ActionCall
             _pluginLoader = new KernelPluginLoader(KernelPluginOptions.FromEnvironment());
             _routeAgent = string.IsNullOrWhiteSpace(routeAgent) ? throw new ArgumentException("Route agent cannot be empty.", nameof(routeAgent)) : routeAgent;
             _topics = topics ?? Array.Empty<Topic>();
+        Console.WriteLine($"SemanticKernelOrchestrator initialized with model '{_model}' at endpoint '{_endpoint}' and route agent '{_routeAgent}'."); 
+        Console.WriteLine($"topics provided to orchestrator: {(_topics.Count > 0 ? string.Join(", ", _topics.Select(t => t.Name)) : "none")}    "); 
         }
 
         public async Task<ReasoningResult> GenerateSqlFromQuestionAsync(string question, DatabaseSchema schema, CancellationToken cancellationToken = default)

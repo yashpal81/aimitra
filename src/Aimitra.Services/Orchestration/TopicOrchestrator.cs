@@ -55,10 +55,13 @@ namespace Aimitra.Services.Orchestration
             SemanticKernelOrchestrator kernel,
             IEnumerable<ITopicAgent>? agents = null)
         {
+             
             _kernel = kernel ?? throw new ArgumentNullException(nameof(kernel));
             _agentRegistry = agents?
                 .ToDictionary(a => a.TopicName, StringComparer.OrdinalIgnoreCase)
                 ?? new Dictionary<string, ITopicAgent>(StringComparer.OrdinalIgnoreCase);
+            Console.WriteLine($"TopicOrchestrator initialized with {_agentRegistry.Count} registered agents."); 
+
         }
 
         /// <summary>

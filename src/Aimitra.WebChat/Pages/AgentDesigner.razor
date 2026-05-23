@@ -1,6 +1,7 @@
 @page "/agent-designer"
 @using Aimitra.WebChat.Models
 @inject Aimitra.WebChat.Services.AgentDefinitionStore DefinitionStore
+@inject Aimitra.WebChat.Services.AgentDefinitionLoader DefinitionLoader
 
 <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
     <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/50">
@@ -183,18 +184,7 @@
 }
 
 @code {
-    private readonly List<KernelFunctionOption> availableKernelFunctions = new()
-    {
-        new() { DisplayName = "Get Schema", FullName = "DatabaseTools.GetDatabaseSchema", Group = "DatabaseTools", Description = "Returns table and column metadata for the configured database." },
-        new() { DisplayName = "Execute SQL", FullName = "DatabaseTools.ExecuteSql", Group = "DatabaseTools", Description = "Runs a SQL statement against the configured database connection." },
-        new() { DisplayName = "Verify Customer", FullName = "VerificationPlugin.verify_customer", Group = "Verification", Description = "Confirms customer identity using the verification workflow." },
-        new() { DisplayName = "Go Back", FullName = "NavigationPlugin.go_back", Group = "Navigation", Description = "Routes the conversation back to the previous step or topic." },
-        new() { DisplayName = "Inappropriate Content", FullName = "InappropriateContentGuardrail.Inappropriate_Content", Group = "Guardrails", Description = "Detects and handles inappropriate or unsafe content." },
-        new() { DisplayName = "Prompt Injection", FullName = "PromptInjectionGuardrail.Prompt_Injection", Group = "Guardrails", Description = "Detects prompt injection and adversarial instruction attempts." },
-        new() { DisplayName = "Greet", FullName = "SampleGreetingPlugin.Greet", Group = "SamplePlugins", Description = "Returns a simple greeting response for demo and testing." },
-        new() { DisplayName = "Get Astrological Reading", FullName = "AstrologerPlugin.GetAstrologicalReading", Group = "SamplePlugins", Description = "Produces a sample astrology-style reading based on user details." },
-        new() { DisplayName = "Get Date of Birth", FullName = "AstrologerPlugin.GetDateOfBirth", Group = "SamplePlugins", Description = "Collects or returns date-of-birth related sample data." }
-    };
+    private List<KernelFunctionOption> availableKernelFunctions = new();
 
     private AgentDefinition agent = new()
     {
@@ -219,6 +209,17 @@
     {
         WriteIndented = true
     });
+
+    protected override void OnInitialized()
+    {
+        availableKernelFunctions = DefinitionLoader.LoadAvailableKernelFunctions().ToList();
+        Console.WriteLine($"Loaded {availableKernelFunctions.Count} available kernel functions for selection in the designer.");
+    Console.WriteLine("Available kernel functions:");
+        foreach (var option in availableKernelFunctions)
+        {
+            Console.WriteLine($"- {option.FullName} (Display: {option.DisplayName}, Group: {option.Group})");
+        }
+    }
 
     private void AddTopic()
     {

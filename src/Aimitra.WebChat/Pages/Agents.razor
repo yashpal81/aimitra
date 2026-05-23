@@ -1,6 +1,7 @@
 @page "/agents"
 @using Aimitra.WebChat.Models
 @using Aimitra.WebChat.Services
+@inject NavigationManager Navigation
 @inject Aimitra.WebChat.Services.AgentDefinitionStore DefinitionStore
 
 <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -36,13 +37,14 @@
                         <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Name</th>
                         <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Description</th>
                         <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Source file</th>
+                        <th class="w-32 border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Edit</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (agentFiles.Count == 0)
                     {
                         <tr>
-                            <td colspan="4" class="px-4 py-8 text-sm text-slate-500">No agent definitions were found in App_Data/agent-definitions.</td>
+                            <td colspan="5" class="px-4 py-8 text-sm text-slate-500">No agent definitions were found in App_Data/agent-definitions.</td>
                         </tr>
                     }
                     else
@@ -69,6 +71,13 @@
                                 </td>
                                 <td class="border-b border-slate-100 px-4 py-4 align-top text-sm text-slate-500">
                                     @System.IO.Path.GetFileName(file.FilePath)
+                                </td>
+                                <td class="border-b border-slate-100 px-4 py-4 align-top">
+                                    <button type="button"
+                                            class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                                            @onclick="() => EditDefinition(file.FilePath)">
+                                        Edit
+                                    </button>
                                 </td>
                             </tr>
                         }
@@ -121,5 +130,11 @@
         DefinitionStore.SaveAll(agentFiles);
         Reload();
         status = "Saved active agent selection to App_Data/agent-definitions.";
+    }
+
+    private void EditDefinition(string filePath)
+    {
+        var encoded = Uri.EscapeDataString(filePath);
+        Navigation.NavigateTo($"/agent-designer?file={encoded}");
     }
 }

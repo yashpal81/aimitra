@@ -237,8 +237,11 @@ public class ActionCall
                     functions:   routingFunctions));
 
             var chat = routingKernel.GetRequiredService<IChatCompletionService>();
-            var history = new ChatHistory(
-                "You are a topic router. Analyse the user request carefully.\n" +
+            var history = new ChatHistory();
+            history.AddSystemMessage("You are a strict topic router.\n" +
+                "Only route requests to the registered topics provided as tools.\n" +
+                "Do not answer from general model knowledge, training data, or guesswork.\n" +
+                "If no registered topic can handle the request, make no function call.\n" +
                 "• If the request can be answered by a SINGLE topic, call that one function.\n" +
                 "• If the request SPANS multiple topics (e.g. look up data from a database " +
                 "AND THEN use that result for a prediction or other action), call ALL required " +
@@ -367,13 +370,17 @@ public class ActionCall
             if (topics.Count == 0)
             {
                 Console.WriteLine("[TopicRouter] No topic matched — no topics registered.");
-                return (Array.Empty<Topic>(), "No topic could be selected for this request.");
+                return (Array.Empty<Topic>(), "Agent can not answer this query. No registered topic matched the request.");
             }
 
             if (topics.Count == 1)
             {
                 Console.WriteLine($"[TopicRouter] Single topic: '{topics[0].Name}'");
                 var resp = await RunWithTopicAsync(userPrompt, topics[0], cancellationToken).ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(resp))
+                {
+                    return (topics, "This agent can answer this query, but no response was produced.");
+                }
                 return (topics, resp);
             }
 
@@ -476,4 +483,3 @@ public class ActionCall
 
     }
 }
-

@@ -1,0 +1,15 @@
+{
+  "Name": "Office Assistant ",
+  "Active": false,
+  "Description": "",
+  "Topics": [
+    {
+      "Name": "Get Meeting Details",
+      "Description": "You\u0027re job is to get meeting details and from use if you donot have required to get meeting details like date etc.",
+      "KernelFunctions": [
+        "DatabaseTools.RunSql",
+        "OfficePlugin.MeetingDetails"
+      ]
+    }
+  ]
+}

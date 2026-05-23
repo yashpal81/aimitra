@@ -1,0 +1,17 @@
+{
+  "Name": "Meeting assistant",
+  "Active": true,
+  "Description": "",
+  "GroupDescription": "Identify the work that need to take after the meeting",
+  "Topics": [
+    {
+      "Name": "Zoom Meeting assistant",
+      "Description": "take zoom meeting notes and identify action items",
+      "KernelFunctions": [
+        "DatabaseTools.RunSql",
+        "OfficePlugin.MeetingActionPoints",
+        "OfficePlugin.MeetingDetails"
+      ]
+    }
+  ]
+}

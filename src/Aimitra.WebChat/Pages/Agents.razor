@@ -1,0 +1,125 @@
+@page "/agents"
+@using Aimitra.WebChat.Models
+@using Aimitra.WebChat.Services
+@inject Aimitra.WebChat.Services.AgentDefinitionStore DefinitionStore
+
+<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/50">
+        <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-700">Aimitra Agents</p>
+                <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Agent registry</h1>
+                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                    Review every agent definition in <code>App_Data</code>, see which one is active, and switch the active agent with a single radio selection.
+                </p>
+            </div>
+
+            <button type="button"
+                    class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+                    @onclick="SaveActiveSelection">
+                Save selection
+            </button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(status))
+        {
+            <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                @status
+            </div>
+        }
+
+        <div class="overflow-hidden rounded-2xl border border-slate-200">
+            <table class="min-w-full border-separate border-spacing-0">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="w-20 border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Active</th>
+                        <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Name</th>
+                        <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Description</th>
+                        <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Source file</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (agentFiles.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="4" class="px-4 py-8 text-sm text-slate-500">No agent definitions were found in App_Data/agent-definitions.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var file in agentFiles)
+                        {
+                            <tr class="hover:bg-cyan-50/40 @(file.Definition.Active ? "bg-cyan-50/20" : string.Empty)">
+                                <td class="border-b border-slate-100 px-4 py-4 align-top">
+                                    <input type="radio"
+                                           name="activeAgent"
+                                           class="mt-1 h-4 w-4 border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                                           checked="@file.Definition.Active"
+                                           @onchange="() => SelectActive(file.FilePath)" />
+                                </td>
+                                <td class="border-b border-slate-100 px-4 py-4 align-top">
+                                    <div class="text-sm font-semibold text-slate-900">@file.Definition.Name</div>
+                                    @if (file.Definition.Active)
+                                    {
+                                        <div class="mt-1 inline-flex rounded-full bg-cyan-100 px-2.5 py-1 text-xs font-medium text-cyan-800">Active</div>
+                                    }
+                                </td>
+                                <td class="border-b border-slate-100 px-4 py-4 align-top text-sm leading-6 text-slate-600">
+                                    @file.Definition.Description
+                                </td>
+                                <td class="border-b border-slate-100 px-4 py-4 align-top text-sm text-slate-500">
+                                    @System.IO.Path.GetFileName(file.FilePath)
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<AgentDefinitionFile> agentFiles = new();
+    private string? selectedFilePath;
+    private string status = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        Reload();
+    }
+
+    private void Reload()
+    {
+        agentFiles = DefinitionStore.LoadAll().ToList();
+        selectedFilePath = agentFiles.FirstOrDefault(file => file.Definition.Active)?.FilePath
+            ?? agentFiles.FirstOrDefault()?.FilePath;
+    }
+
+    private void SelectActive(string filePath)
+    {
+        selectedFilePath = filePath;
+        foreach (var file in agentFiles)
+        {
+            file.Definition.Active = string.Equals(file.FilePath, filePath, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private void SaveActiveSelection()
+    {
+        if (string.IsNullOrWhiteSpace(selectedFilePath))
+        {
+            status = "No agent was selected.";
+            return;
+        }
+
+        foreach (var file in agentFiles)
+        {
+            file.Definition.Active = string.Equals(file.FilePath, selectedFilePath, StringComparison.OrdinalIgnoreCase);
+        }
+
+        DefinitionStore.SaveAll(agentFiles);
+        Reload();
+        status = "Saved active agent selection to App_Data/agent-definitions.";
+    }
+}

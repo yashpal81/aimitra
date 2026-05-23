@@ -1,0 +1,14 @@
+{
+  "Name": "Greeter",
+  "Active": false,
+  "Description": "",
+  "Topics": [
+    {
+      "Name": "Greeting",
+      "Description": "You are Gatekeeper who greet when fist time user start any conversation. and with help of tools ensuring user is verified and proper response and working as gatekeeper using tools. ",
+      "KernelFunctions": [
+        "SampleGreetingPlugin.Greet"
+      ]
+    }
+  ]
+}

@@ -22,7 +22,7 @@ namespace Aimitra.WebChat.Services
         {
             
             Console.WriteLine($"Starting to load agent definitions from disk at {DateTime.UtcNow}...");  
-            var folder = Path.Combine(_environment.ContentRootPath, "App_Data", "agent-definitions");
+            var folder = Path.Combine(AppContext.BaseDirectory, "App_Data", "agent-definitions");
             if (!Directory.Exists(folder))
             {
                 return Array.Empty<Topic>();

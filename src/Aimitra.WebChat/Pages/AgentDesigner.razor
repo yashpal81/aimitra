@@ -24,7 +24,7 @@
 
                 <div class="mb-4 flex items-center justify-between">
                     <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Topics</h2>
-                    <button class="rounded-xl bg-cyan-600 px-3 py-2 text-xs font-semibold text-white hover:bg-cyan-500"
+                    <button type="button" class="rounded-xl bg-cyan-600 px-3 py-2 text-xs font-semibold text-white hover:bg-cyan-500"
                             @onclick="AddTopic">
                         Add Topic
                     </button>
@@ -33,12 +33,13 @@
                 <div class="space-y-4">
                     @for (var i = 0; i < agent.Topics.Count; i++)
                     {
-                        var topic = agent.Topics[i];
+                        var topicIndex = i;
+                        var topic = agent.Topics[topicIndex];
                         <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                            <div class="mb-3 flex items-center justify-between">
-                                <h3 class="text-sm font-semibold text-slate-800">Topic @(i + 1)</h3>
-                                <button class="text-xs font-semibold text-rose-600 hover:text-rose-500"
-                                        @onclick="() => RemoveTopic(i)">
+                            <div class="mb-3 flex items-center justify-between gap-3">
+                                <h3 class="text-sm font-semibold text-slate-800">Topic @(topicIndex + 1)</h3>
+                                <button type="button" class="text-xs font-semibold text-rose-600 hover:text-rose-500"
+                                        @onclick="() => RemoveTopic(topicIndex)">
                                     Remove
                                 </button>
                             </div>
@@ -56,26 +57,34 @@
                                           placeholder="Topic description"></textarea>
 
                                 <div>
-                                    <div class="mb-2 flex items-center justify-between">
+                                    <div class="mb-2 flex items-center justify-between gap-3">
                                         <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Kernel Functions</span>
-                                        <span class="text-xs text-slate-400">@topic.KernelFunctions.Count selected</span>
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-xs text-slate-400">@topic.KernelFunctions.Count selected</span>
+                                            <button type="button" class="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-800 hover:bg-cyan-100"
+                                                    @onclick="() => OpenFunctionModal(topicIndex)">
+                                                Add Function
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div class="grid gap-2 sm:grid-cols-2">
-                                        @foreach (var option in availableKernelFunctions)
-                                        {
-                                            <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 hover:border-cyan-300 hover:bg-cyan-50">
-                                                <input type="checkbox"
-                                                       class="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-                                                       checked="@topic.KernelFunctions.Contains(option.FullName)"
-                                                       @onchange="() => ToggleKernelFunction(topic, option.FullName)" />
-                                                <span class="min-w-0">
-                                                    <span class="block text-sm font-medium text-slate-800">@option.DisplayName</span>
-                                                    <span class="block text-xs text-slate-500">@option.FullName</span>
+                                    @if (topic.KernelFunctions.Count == 0)
+                                    {
+                                        <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                                            No kernel functions selected yet.
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="flex flex-wrap gap-2">
+                                            @foreach (var functionName in topic.KernelFunctions)
+                                            {
+                                                <span class="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-800">
+                                                    @functionName
                                                 </span>
-                                            </label>
-                                        }
-                                    </div>
+                                            }
+                                        </div>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -86,7 +95,7 @@
             <section class="rounded-2xl border border-slate-200 bg-white p-5">
                 <div class="mb-4 flex items-center justify-between">
                     <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Preview</h2>
-                    <button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+                    <button type="button" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
                             @onclick="Save">
                         Save as JSON
                     </button>
@@ -107,18 +116,84 @@
     </div>
 </div>
 
+@if (isFunctionModalOpen && selectedTopic is not null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6">
+        <div class="w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">Add Function</p>
+                    <h3 class="mt-1 text-lg font-semibold text-slate-900">Select kernel functions for topic</h3>
+                </div>
+                <button type="button" class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                        @onclick="CloseFunctionModal">
+                    Close
+                </button>
+            </div>
+
+            <div class="max-h-[70vh] overflow-auto">
+                <table class="min-w-full border-separate border-spacing-0">
+                    <thead class="sticky top-0 bg-slate-50">
+                        <tr>
+                            <th class="w-16 border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Select</th>
+                            <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Name of Kernel function</th>
+                            <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Plugin name as category</th>
+                            <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var option in availableKernelFunctions)
+                        {
+                            <tr class="hover:bg-cyan-50/50">
+                                <td class="border-b border-slate-100 px-4 py-4 align-top">
+                                    <input type="checkbox"
+                                           class="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                                           checked="@selectedTopic.KernelFunctions.Contains(option.FullName)"
+                                           @onchange="() => ToggleKernelFunction(option.FullName)" />
+                                </td>
+                                <td class="border-b border-slate-100 px-4 py-4 align-top">
+                                    <div class="text-sm font-medium text-slate-900">@option.DisplayName</div>
+                                    <div class="mt-1 text-xs text-slate-500">@option.FullName</div>
+                                </td>
+                                <td class="border-b border-slate-100 px-4 py-4 align-top">
+                                    <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                                        @option.Group
+                                    </span>
+                                </td>
+                                <td class="border-b border-slate-100 px-4 py-4 align-top text-sm leading-6 text-slate-600">
+                                    @option.Description
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex items-center justify-between gap-4 border-t border-slate-200 px-6 py-4">
+                <p class="text-sm text-slate-500">
+                    Checked functions are added directly to the selected topic.
+                </p>
+                <button type="button" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+                        @onclick="CloseFunctionModal">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private readonly List<KernelFunctionOption> availableKernelFunctions = new()
     {
-        new() { DisplayName = "Database Tools - Get Schema", FullName = "DatabaseTools.GetDatabaseSchema", Group = "DatabaseTools" },
-        new() { DisplayName = "Database Tools - Execute SQL", FullName = "DatabaseTools.ExecuteSql", Group = "DatabaseTools" },
-        new() { DisplayName = "Verification - Verify Customer", FullName = "VerificationPlugin.verify_customer", Group = "Verification" },
-        new() { DisplayName = "Navigation - Go Back", FullName = "NavigationPlugin.go_back", Group = "Navigation" },
-        new() { DisplayName = "Guardrail - Inappropriate Content", FullName = "InappropriateContentGuardrail.Inappropriate_Content", Group = "Guardrails" },
-        new() { DisplayName = "Guardrail - Prompt Injection", FullName = "PromptInjectionGuardrail.Prompt_Injection", Group = "Guardrails" },
-        new() { DisplayName = "Greeting - Greet", FullName = "SampleGreetingPlugin.Greet", Group = "SamplePlugins" },
-        new() { DisplayName = "Astrology - Reading", FullName = "AstrologerPlugin.GetAstrologicalReading", Group = "SamplePlugins" },
-        new() { DisplayName = "Astrology - Get DOB", FullName = "AstrologerPlugin.GetDateOfBirth", Group = "SamplePlugins" }
+        new() { DisplayName = "Get Schema", FullName = "DatabaseTools.GetDatabaseSchema", Group = "DatabaseTools", Description = "Returns table and column metadata for the configured database." },
+        new() { DisplayName = "Execute SQL", FullName = "DatabaseTools.ExecuteSql", Group = "DatabaseTools", Description = "Runs a SQL statement against the configured database connection." },
+        new() { DisplayName = "Verify Customer", FullName = "VerificationPlugin.verify_customer", Group = "Verification", Description = "Confirms customer identity using the verification workflow." },
+        new() { DisplayName = "Go Back", FullName = "NavigationPlugin.go_back", Group = "Navigation", Description = "Routes the conversation back to the previous step or topic." },
+        new() { DisplayName = "Inappropriate Content", FullName = "InappropriateContentGuardrail.Inappropriate_Content", Group = "Guardrails", Description = "Detects and handles inappropriate or unsafe content." },
+        new() { DisplayName = "Prompt Injection", FullName = "PromptInjectionGuardrail.Prompt_Injection", Group = "Guardrails", Description = "Detects prompt injection and adversarial instruction attempts." },
+        new() { DisplayName = "Greet", FullName = "SampleGreetingPlugin.Greet", Group = "SamplePlugins", Description = "Returns a simple greeting response for demo and testing." },
+        new() { DisplayName = "Get Astrological Reading", FullName = "AstrologerPlugin.GetAstrologicalReading", Group = "SamplePlugins", Description = "Produces a sample astrology-style reading based on user details." },
+        new() { DisplayName = "Get Date of Birth", FullName = "AstrologerPlugin.GetDateOfBirth", Group = "SamplePlugins", Description = "Collects or returns date-of-birth related sample data." }
     };
 
     private AgentDefinition agent = new()
@@ -136,6 +211,9 @@
     };
 
     private string status = string.Empty;
+    private bool isFunctionModalOpen;
+    private int? activeTopicIndex;
+    private TopicDefinition? selectedTopic;
 
     private string previewJson => System.Text.Json.JsonSerializer.Serialize(agent, new System.Text.Json.JsonSerializerOptions
     {
@@ -155,8 +233,33 @@
         }
     }
 
-    private void ToggleKernelFunction(TopicDefinition topic, string functionName)
+    private void OpenFunctionModal(int topicIndex)
     {
+        if (topicIndex < 0 || topicIndex >= agent.Topics.Count)
+        {
+            return;
+        }
+
+        activeTopicIndex = topicIndex;
+        selectedTopic = agent.Topics[topicIndex];
+        isFunctionModalOpen = true;
+    }
+
+    private void CloseFunctionModal()
+    {
+        isFunctionModalOpen = false;
+        activeTopicIndex = null;
+        selectedTopic = null;
+    }
+
+    private void ToggleKernelFunction(string functionName)
+    {
+        var topic = selectedTopic;
+        if (topic is null)
+        {
+            return;
+        }
+
         if (topic.KernelFunctions.Contains(functionName))
         {
             topic.KernelFunctions.Remove(functionName);

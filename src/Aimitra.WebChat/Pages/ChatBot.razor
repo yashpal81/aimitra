@@ -1,6 +1,8 @@
 @page "/chatbot"
 @layout Aimitra.WebChat.Shared.EmptyLayout
 @using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Forms
+@inject Aimitra.WebChat.Services.IDocumentMemoryService DocumentMemory
 @inject IJSRuntime JS
 
 <style>
@@ -76,22 +78,48 @@
 
     <!-- Pinned bottom message bar wrapper -->
     <div class="border-t border-slate-200 bg-white p-3">
-        <div class="flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/10 transition">
-            <input placeholder="Ask me anything..." 
-                   @bind="currentMessage" 
-                   @bind:event="oninput"
-                   @onkeyup="OnMessageKeyUp"
-                   disabled="@isThinking"
-                   class="w-full bg-transparent text-xs text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed" />
-            
-            <button @onclick="Send"
-                    disabled="@(isThinking || string.IsNullOrWhiteSpace(currentMessage))"
-                    class="p-1.5 rounded-lg text-cyan-600 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent transition">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="22" y1="2" x2="11" y2="13"></line>
-                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                </svg>
-            </button>
+        <div class="space-y-2">
+            <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                <span class="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-700">Session KB: @collectionName</span>
+                <span class="rounded-full bg-cyan-50 px-2 py-1 font-semibold text-cyan-700">
+                    @if (selectedFile is not null)
+                    {
+                        @($"Attached: {selectedFile.Name}")
+                    }
+                    else
+                    {
+                        @("No file attached")
+                    }
+                </span>
+            </div>
+
+            <div class="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2">
+                <label class="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-900">
+                    <span class="rounded-lg bg-white px-2 py-1 border border-slate-200">Attach file</span>
+                    <InputFile OnChange="OnFileSelected" class="hidden" />
+                </label>
+                <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/10 transition">
+                    <input placeholder="Ask me anything..." 
+                           @bind="currentMessage" 
+                           @bind:event="oninput"
+                           @onkeyup="OnMessageKeyUp"
+                           disabled="@isThinking"
+                           class="w-full bg-transparent text-xs text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed" />
+                    
+                    <button @onclick="Send"
+                            disabled="@(isThinking || string.IsNullOrWhiteSpace(currentMessage))"
+                            class="p-1.5 rounded-lg text-cyan-600 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent transition">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(status))
+                {
+                    <div class="text-[11px] text-slate-500">@status</div>
+                }
+            </div>
         </div>
     </div>
 </div>
@@ -100,8 +128,17 @@
     private List<MessageEntry> messages = new();
     private string user = "User"; // Preset identity for embed ecosystem
     private string currentMessage = string.Empty;
+    private string collectionName = string.Empty;
+    private string status = string.Empty;
     private bool isThinking;
     private DotNetObjectReference<ChatBot>? objRef;
+    private IBrowserFile? selectedFile;
+
+    protected override void OnInitialized()
+    {
+        collectionName = $"chatbot-{Guid.NewGuid():N}";
+        DocumentMemory.SetLastCollection(collectionName);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -135,10 +172,50 @@
             StateHasChanged();
             
             var textToSend = currentMessage;
+            if (!string.IsNullOrWhiteSpace(collectionName))
+            {
+                var matches = await DocumentMemory.AskAsync(currentMessage, collectionName, topK: 3);
+                if (matches.Count > 0)
+                {
+                    var context = string.Join("\n\n", matches.Select(m => $"[{m.Source}] {m.Snippet}"));
+                    textToSend = $"Use the following session knowledge base context to answer.\n\nContext:\n{context}\n\nUser question: {currentMessage}";
+                }
+            }
             currentMessage = string.Empty;
             
             await JS.InvokeVoidAsync("aimitraChat.sendMessage", user, textToSend);
             StateHasChanged();
+        }
+    }
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        if (selectedFile is null)
+        {
+            return;
+        }
+
+        var tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}_{selectedFile.Name}");
+        await using (var stream = selectedFile.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024))
+        await using (var fs = File.Create(tempPath))
+        {
+            await stream.CopyToAsync(fs);
+        }
+
+        try
+        {
+            var collection = await DocumentMemory.ImportDocumentAsync(tempPath, collectionName);
+            collectionName = collection;
+            DocumentMemory.SetLastCollection(collectionName);
+            status = $"Attached '{selectedFile.Name}' to session KB '{collectionName}'.";
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
         }
     }
 

@@ -9,6 +9,6 @@
     <ProjectReference Include="..\Aimitra.Services\Aimitra.Services.csproj" />
     <ProjectReference Include="..\Aimitra.SemanticRouteService\Aimitra.SemanticRouteService.csproj" />
     <ProjectReference Include="..\Aimitra.SamplePlugins\Aimitra.SamplePlugins.csproj" />
-
+    <PackageReference Include="Microsoft.KernelMemory.Core" Version="0.35.240412.2" />
   </ItemGroup>
 </Project>

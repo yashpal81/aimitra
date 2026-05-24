@@ -252,7 +252,8 @@ Console.WriteLine("Kernel function options:");
                 ["InappropriateContentGuardrail"] = KernelPluginFactory.CreateFromObject(new InappropriateContentGuardrail(), "InappropriateContentGuardrail"),
                 ["PromptInjectionGuardrail"] = KernelPluginFactory.CreateFromObject(new PromptInjectionGuardrail(), "PromptInjectionGuardrail"),
                 ["SampleGreetingPlugin"] = KernelPluginFactory.CreateFromObject(new SampleGreetingPlugin(), "SampleGreetingPlugin"),
-                ["AstrologerPlugin"] = KernelPluginFactory.CreateFromObject(new AstrologerPlugin(), "AstrologerPlugin")
+                ["AstrologerPlugin"] = KernelPluginFactory.CreateFromObject(new AstrologerPlugin(), "AstrologerPlugin"),
+                ["KnowledgeBasePlugin"] = KernelPluginFactory.CreateFromObject(new KnowledgeBasePlugin(new DocumentMemoryService()), "KnowledgeBasePlugin")
             };
         }
 
@@ -266,7 +267,8 @@ Console.WriteLine("Kernel function options:");
                 ["InappropriateContentGuardrail"] = new InappropriateContentGuardrail(),
                 ["PromptInjectionGuardrail"] = new PromptInjectionGuardrail(),
                 ["SampleGreetingPlugin"] = new SampleGreetingPlugin(),
-                ["AstrologerPlugin"] = new AstrologerPlugin()
+                ["AstrologerPlugin"] = new AstrologerPlugin(),
+                ["KnowledgeBasePlugin"] = new KnowledgeBasePlugin(new DocumentMemoryService())
             };
         }
 

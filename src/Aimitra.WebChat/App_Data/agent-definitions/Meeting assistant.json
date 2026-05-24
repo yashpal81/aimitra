@@ -1,8 +1,7 @@
 {
   "Name": "Meeting assistant",
   "Active": true,
-  "Description": "",
-  "GroupDescription": "Identify the work that need to take after the meeting",
+  "Description": "meeting assistant to evaluate and answer based on knowledge base documents",
   "Topics": [
     {
       "Name": "Zoom Meeting assistant",
@@ -10,7 +9,8 @@
       "KernelFunctions": [
         "DatabaseTools.RunSql",
         "OfficePlugin.MeetingActionPoints",
-        "OfficePlugin.MeetingDetails"
+        "OfficePlugin.MeetingDetails",
+        "KnowledgeBasePlugin.QueryKnowledgeBaseAsync"
       ]
     }
   ]

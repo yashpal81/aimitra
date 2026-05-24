@@ -1,0 +1,163 @@
+@page "/chatbot"
+@layout Aimitra.WebChat.Shared.EmptyLayout
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+<style>
+    @@keyframes dotPulse {
+        0%, 20% { opacity: .2; transform: translateY(0); }
+        40% { opacity: 1; transform: translateY(-1px); }
+        100% { opacity: .2; transform: translateY(0); }
+    }
+
+    .thinking-dot {
+        display: inline-block;
+        animation: dotPulse 1.2s infinite ease-in-out;
+    }
+
+    .thinking-dot:nth-child(2) { animation-delay: .15s; }
+    .thinking-dot:nth-child(3) { animation-delay: .3s; }
+</style>
+
+<!-- Full viewport height widget canvas container -->
+<div class="flex h-screen flex-col bg-slate-50 text-slate-900 font-sans">
+    
+    <!-- Clean, compact header widget area -->
+    <div class="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <div>
+            <h3 class="text-sm font-semibold text-slate-800">Aimitra AI Orchestration</h3>
+            <p class="text-[11px] text-emerald-600 flex items-center gap-1">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Online
+            </p>
+        </div>
+        <span class="text-[10px] uppercase font-medium tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Secure</span>
+    </div>
+
+    <!-- Active conversation feed box -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-3" id="chatHistoryWindow">
+        @if (messages.Count == 0)
+        {
+            <div class="rounded-xl border border-dashed border-slate-200 bg-white p-4 text-xs text-center text-slate-400">
+                Start a conversation. Secure topic-aware pipeline routing is active.
+            </div>
+        }
+        else
+        {
+            @foreach (var m in messages)
+            {
+                <div class="flex @(m.User == "Aimitra" ? "justify-start" : "justify-end")">
+                    <div class="max-w-[85%] rounded-2xl px-3.5 py-2 shadow-sm text-xs leading-relaxed @(m.User == "Aimitra" ? "border border-cyan-100 bg-cyan-50/70 text-slate-900" : "bg-gradient-to-r from-cyan-600 to-sky-600 text-white")">
+                        @if (m.User == "Aimitra")
+                        {
+                            <div class="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-cyan-700">@m.User</div>
+                        }
+                        <div class="whitespace-pre-wrap">@m.Text</div>
+                    </div>
+                </div>
+            }
+        }
+
+        @if (isThinking)
+        {
+            <div class="flex justify-start">
+                <div class="max-w-[85%] rounded-2xl border border-cyan-100 bg-cyan-50/70 px-3.5 py-2 text-slate-900 shadow-sm text-xs">
+                    <div class="flex items-center gap-1.5 text-slate-500">
+                        <span>Aimitra is planning</span>
+                        <span class="inline-flex gap-0.5 font-bold">
+                            <span class="thinking-dot">.</span>
+                            <span class="thinking-dot">.</span>
+                            <span class="thinking-dot">.</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Pinned bottom message bar wrapper -->
+    <div class="border-t border-slate-200 bg-white p-3">
+        <div class="flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/10 transition">
+            <input placeholder="Ask me anything..." 
+                   @bind="currentMessage" 
+                   @bind:event="oninput"
+                   @onkeyup="OnMessageKeyUp"
+                   disabled="@isThinking"
+                   class="w-full bg-transparent text-xs text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed" />
+            
+            <button @onclick="Send"
+                    disabled="@(isThinking || string.IsNullOrWhiteSpace(currentMessage))"
+                    class="p-1.5 rounded-lg text-cyan-600 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent transition">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<MessageEntry> messages = new();
+    private string user = "User"; // Preset identity for embed ecosystem
+    private string currentMessage = string.Empty;
+    private bool isThinking;
+    private DotNetObjectReference<ChatBot>? objRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            objRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("aimitraChat.start", objRef);
+        }
+        
+        // Auto scroll helper execution to keep latest message visible inside iframe viewports
+        await JS.InvokeVoidAsync("eval", "const el = document.getElementById('chatHistoryWindow'); if(el) el.scrollTop = el.scrollHeight;");
+    }
+
+    [JSInvokable]
+    public Task ReceiveMessage(string user, string message)
+    {
+        messages.Add(new MessageEntry { User = user, Text = message });
+        if (user == "Aimitra")
+        {
+            isThinking = false;
+        }
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task Send()
+    {
+        if (!string.IsNullOrWhiteSpace(currentMessage))
+        {
+            isThinking = true;
+            StateHasChanged();
+            
+            var textToSend = currentMessage;
+            currentMessage = string.Empty;
+            
+            await JS.InvokeVoidAsync("aimitraChat.sendMessage", user, textToSend);
+            StateHasChanged();
+        }
+    }
+
+    private void OnMessageKeyUp(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            Send();
+        }
+    }
+
+    private class MessageEntry
+    {
+        public string User { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+
+    public void Dispose()
+    {
+        objRef?.Dispose();
+    }
+}

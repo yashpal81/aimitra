@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Second Web Application - Embedded Chat</title>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f9;
+            color: #333;
+        }
+        .navbar {
+            background-color: #1a252f;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .main-content {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        h1 { color: #2c3e50; }
+        p { line-height: 1.6; color: #555; }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        Enterprise Portal Dashboard
+    </div>
+
+    <div class="main-content">
+        <h1>Welcome to the Main Application</h1>
+        <p>This page uses the embedded chatbot script so the Aimitra widget appears in the bottom right corner without changing the surrounding layout.</p>
+        <p>Click the blue chat bubble to open the embedded chatbot, then start chatting with the assistant inside the iframe.</p>
+    </div>
+
+    <script src="/js/embed-chatbot.js" id="ai-chatbot-loader" data-app-url="http://127.0.0.1:5000/chatbot"></script>
+
+</body>
+</html>

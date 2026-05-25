@@ -1,0 +1,22 @@
+{
+  "Name": "Hiring Manager assistant",
+  "Active": false,
+  "Description": "",
+  "Topics": [
+    {
+      "Name": "Database Tool ",
+      "Description": "Can load database tables and execute sql query to get data from database. Cant delete Data.",
+      "KernelFunctions": [
+        "DatabaseTools.GetDatabaseSchema",
+        "DatabaseTools.ExecuteSql"
+      ]
+    },
+    {
+      "Name": "Greeting",
+      "Description": "Whenever user greet agent , greet him back and ask him about if he has any query",
+      "KernelFunctions": [
+        "SampleGreetingPlugin.Greet"
+      ]
+    }
+  ]
+}

@@ -45,7 +45,7 @@ public class MaskingCore
     public async Task<string> maskPiiData(string prompt)
     {
         Console.WriteLine("Prompt before to Call LLM masking: " + prompt);
-       // await Task.Delay(waitingTime);
+        await Task.Delay(waitingTime);
         if (string.IsNullOrEmpty(prompt)) return prompt;
 
         var response = await _httpClient.PostAsJsonAsync("scan", new { text = prompt });

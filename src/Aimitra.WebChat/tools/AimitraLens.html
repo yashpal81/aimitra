@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AimitraLens — Agent Trace Visualizer</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:       #0d1117;
+  --surface:  #161b22;
+  --surface2: #1c2128;
+  --border:   #30363d;
+  --text:     #e6edf3;
+  --muted:    #8b949e;
+  --accent:   #58a6ff;
+  --agent:    #1f6feb;
+  --tool:     #d29922;
+  --success:  #3fb950;
+  --error:    #f85149;
+  --warn:     #e3b341;
+  --radius:   6px;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  height: 100vh; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; background: var(--surface);
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.logo { font-size: 15px; font-weight: 700; color: var(--accent); letter-spacing: -0.3px; }
+.logo span { color: var(--muted); font-weight: 400; }
+.header-meta { font-size: 11px; color: var(--muted); margin-left: 12px; }
+.header-right { display: flex; gap: 8px; align-items: center; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+button {
+  padding: 5px 13px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text); cursor: pointer; font-size: 12px; transition: border-color .15s;
+}
+button:hover { border-color: var(--accent); color: var(--accent); }
+button.primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+button.primary:hover { opacity: .85; color: #000; }
+
+/* ── Drop zone ───────────────────────────────────────────────────────── */
+#dropzone {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px;
+  border: 2px dashed var(--border); margin: 24px;
+  border-radius: 12px; cursor: default; transition: border-color .2s;
+}
+#dropzone.drag-over { border-color: var(--accent); }
+#dropzone h2 { color: var(--muted); font-size: 18px; font-weight: 500; }
+#dropzone p  { color: var(--muted); font-size: 13px; }
+textarea#paste-area {
+  width: 500px; height: 110px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  padding: 8px; font-family: 'Courier New', monospace; font-size: 12px; resize: none;
+}
+textarea#paste-area:focus { outline: none; border-color: var(--accent); }
+.drop-hint { font-size: 11px; color: var(--muted); }
+
+/* ── Main layout ─────────────────────────────────────────────────────── */
+#main { flex: 1; display: none; overflow: hidden; grid-template-columns: 320px 1fr; }
+#main.visible { display: grid; }
+
+/* ── Graph panel ─────────────────────────────────────────────────────── */
+#graph-panel {
+  background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.panel-hdr {
+  padding: 9px 14px; border-bottom: 1px solid var(--border);
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px;
+  color: var(--muted); display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+}
+#graph-svg-wrap { flex: 3 1 0; overflow: auto; padding: 16px 10px; min-height: 80px; }
+#graph-svg { display: block; overflow: visible; }
+#summary-bar {
+  padding: 8px 14px; border-top: 1px solid var(--border); background: var(--bg);
+  display: flex; gap: 14px; flex-wrap: wrap; flex-shrink: 0;
+}
+.chip { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+.chip .v { color: var(--text); font-weight: 600; }
+
+/* Legend */
+.legend { display: flex; gap: 10px; }
+.legend-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--muted); }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+/* ── Right panel ─────────────────────────────────────────────────────── */
+#right-panel { display: flex; flex-direction: column; overflow: hidden; }
+.tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+.tab {
+  padding: 9px 16px; font-size: 13px; cursor: pointer;
+  color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab:hover:not(.active) { color: var(--text); }
+.tab-content { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+.tab-content.active { display: flex; }
+
+/* ── Timeline list ───────────────────────────────────────────────────── */
+#timeline-list { flex: 1; overflow-y: auto; padding: 6px; }
+.tl-item {
+  display: flex; align-items: flex-start; gap: 9px; padding: 7px 9px;
+  border-radius: var(--radius); cursor: pointer;
+  border: 1px solid transparent; margin-bottom: 3px; transition: background .12s;
+}
+.tl-item:hover { background: rgba(88,166,255,.05); }
+.tl-item.sel { background: rgba(88,166,255,.1); border-color: rgba(88,166,255,.4); }
+.tl-item.child { margin-left: 22px; }
+.step-num {
+  min-width: 22px; height: 22px; border-radius: 50%;
+  background: var(--border); color: var(--muted); font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.step-num.ok  { background: rgba(63,185,80,.2);  color: var(--success); }
+.step-num.err { background: rgba(248,81,73,.2);  color: var(--error); }
+.step-info { flex: 1; min-width: 0; }
+.step-comp { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.step-meta { display: flex; gap: 7px; margin-top: 2px; flex-wrap: wrap; align-items: center; }
+.badge {
+  display: inline-block; padding: 1px 5px; border-radius: 8px;
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+}
+.b-llm     { background: rgba(31,111,235,.2);  color: #79b8ff; }
+.b-tool    { background: rgba(210,153,34,.2);  color: var(--warn); }
+.b-handoff { background: rgba(63,185,80,.2);   color: var(--success); }
+.b-other     { background: rgba(139,148,158,.15); color: var(--muted); }
+.b-user      { background: rgba(88,166,255,.15);  color: var(--accent); }
+.b-planner   { background: rgba(63,185,80,.18);   color: var(--success); }
+.b-handoff2  { background: rgba(248,81,73,.15);   color: #ff7b72; }
+.step-dur { font-size: 11px; color: var(--muted); }
+.step-status { font-size: 11px; }
+
+/* ── Inspector ───────────────────────────────────────────────────────── */
+#inspector {
+  border-top: 1px solid var(--border); overflow-y: auto;
+  padding: 12px 14px; flex-shrink: 0; max-height: 54%; min-height: 180px;
+}
+.ins-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px;
+  color: var(--muted); margin-bottom: 10px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.ins-title .span-id { font-size: 10px; font-family: monospace; font-weight: 400; }
+.fld { margin-bottom: 10px; }
+.fld-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 3px; }
+.fld-val {
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 7px 8px; font-family: 'Courier New', monospace; font-size: 11px; color: var(--text);
+  white-space: pre-wrap; word-break: break-all; max-height: 110px; overflow-y: auto;
+}
+.fsm-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 12px;
+  background: rgba(88,166,255,.12); color: var(--accent); font-size: 12px; font-weight: 600;
+}
+.var-table { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.var-row { display: flex; border-bottom: 1px solid var(--border); font-size: 11px; font-family: monospace; }
+.var-row:last-child { border-bottom: none; }
+.var-k { padding: 4px 8px; color: var(--warn); min-width: 130px; border-right: 1px solid var(--border); background: rgba(255,255,255,.02); word-break: break-all; }
+.var-v { padding: 4px 8px; color: var(--text); flex: 1; word-break: break-all; }
+.tok-row { display: flex; gap: 14px; flex-wrap: wrap; }
+.tok { font-size: 12px; color: var(--muted); display: flex; gap: 4px; }
+.tok .v { color: var(--text); }
+.empty-ins { text-align: center; padding: 28px; color: var(--muted); font-size: 13px; }
+
+/* ── FSM tab ─────────────────────────────────────────────────────────── */
+#fsm-tab-content { padding: 12px; overflow-y: auto; }
+.fsm-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  border-radius: var(--radius); border: 1px solid var(--border);
+  margin-bottom: 3px; cursor: pointer; transition: background .12s;
+}
+.fsm-item:hover { background: rgba(88,166,255,.05); }
+.fsm-item.sel { border-color: rgba(88,166,255,.5); background: rgba(88,166,255,.08); }
+.fsm-arrow { padding-left: 20px; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+
+/* ── Graph elements ──────────────────────────────────────────────────── */
+.gnode { cursor: default; }
+.gnode:hover rect, .gnode:hover polygon { opacity: .85; }
+.gedge { pointer-events: none; }
+
+/* ── Graph active-highlight animations ─────────────────────────────── */
+@keyframes graph-halo-pulse {
+  0%, 100% { opacity: .7; }
+  50%       { opacity: .18; }
+}
+.gnode-halo { animation: graph-halo-pulse 1.8s ease-in-out infinite; pointer-events: none; }
+@keyframes graph-edge-dash {
+  to { stroke-dashoffset: -18; }
+}
+.gedge-active .edge-main { stroke-dasharray: 7 4; animation: graph-edge-dash .55s linear infinite; }
+
+/* ── Scrollbar ───────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ── How-To panel ─────────────────────────────────────────────────────── */
+.how-to-section {
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.how-to-toggle {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 10px; cursor: pointer;
+  background: var(--surface2); font-size: 12px; font-weight: 600; color: var(--accent);
+  user-select: none; transition: background .12s;
+}
+.how-to-toggle:hover { background: rgba(88,166,255,.1); }
+.how-to-chevron { font-size: 9px; color: var(--muted); }
+.how-to-body { display: none; padding: 10px 10px 8px; border-top: 1px solid var(--border); }
+.how-to-body.open { display: block; }
+.how-to-title {
+  font-size: 10px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 7px;
+}
+.how-to-code {
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 8px 10px; font-family: 'Courier New', monospace; font-size: 10.5px;
+  color: var(--text); white-space: pre; overflow-x: auto; overflow-y: auto;
+  max-height: 210px; margin-bottom: 7px; line-height: 1.55;
+}
+.how-to-actions { display: flex; gap: 6px; }
+.how-to-copy { font-size: 11px; padding: 3px 11px; }
+
+/* ── Section 1 : Agent / Sub-Agent Nodes panel ───────────────────────── */
+#agents-panel {
+  flex: 2 1 0; border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden; min-height: 60px;
+}
+#agents-list { flex: 1; overflow-y: auto; padding: 5px; }
+.agent-card {
+  display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+  border-radius: var(--radius); border: 1px solid var(--border);
+  margin-bottom: 3px; cursor: pointer; transition: background .12s;
+  background: rgba(255,255,255,.02);
+}
+.agent-card:hover { border-color: rgba(88,166,255,.5); background: rgba(88,166,255,.05); }
+.agent-card.active-step { border-color: var(--success); background: rgba(63,185,80,.08); }
+.agent-icon {
+  width: 26px; height: 26px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0; background: rgba(31,111,235,.2);
+}
+.agent-info { flex: 1; min-width: 0; }
+.agent-name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agent-stats { font-size: 10px; color: var(--muted); margin-top: 1px; display: flex; gap: 5px; flex-wrap: wrap; }
+.agent-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+
+/* ── Section 2 : FSM Map tab ─────────────────────────────────────────── */
+#fsmmap-tab-content { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+.fsm-map-legend {
+  display: flex; gap: 14px; padding: 7px 12px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap;
+}
+.fsm-map-leg-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted); }
+.fsm-map-leg-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.fsm-map-svg-wrap { overflow: auto; flex: 1; padding: 10px; }
+.fsm-map-node { cursor: pointer; }
+.fsm-map-node:hover rect { opacity: .8; }
+
+/* ── Section 3 : Flow Navigator tab ─────────────────────────────────── */
+#flownav-tab-content { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+.nav-controls {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 14px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0; background: var(--surface);
+}
+.nav-btn {
+  width: 32px; height: 32px; border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; padding: 0; flex-shrink: 0;
+}
+.nav-btn:disabled { opacity: .35; cursor: not-allowed; }
+.nav-btn:disabled:hover { border-color: var(--border); color: var(--muted); }
+.nav-progress-wrap { flex: 1; }
+.nav-label { font-size: 11px; color: var(--muted); margin-bottom: 3px; text-align: center; }
+.nav-progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.nav-progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .25s; }
+.nav-detail { flex: 1; overflow-y: auto; padding: 12px 14px; }
+.nav-step-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
+}
+.nav-step-num {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(88,166,255,.15); color: var(--accent);
+  font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.nav-step-num.ok  { background: rgba(63,185,80,.2);  color: var(--success); }
+.nav-step-num.err { background: rgba(248,81,73,.2);  color: var(--error); }
+.nav-step-name { font-size: 14px; font-weight: 700; }
+.nav-step-meta { font-size: 11px; color: var(--muted); margin-top: 2px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.nav-empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; }
+.nav-flow {
+  display: flex; flex-direction: column; gap: 5px; font-size: 11px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 7px 9px;
+}
+.nav-flow-row { display: flex; align-items: center; gap: 6px; }
+.nav-flow-cur { color: var(--accent); font-weight: 600; }
+.nav-kboard { display: flex; gap: 6px; font-size: 10px; color: var(--muted); margin-top: 2px; }
+.nav-kboard kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; padding: 1px 5px; border-radius: 3px;
+  border: 1px solid var(--border); background: var(--surface2); font-family: monospace; font-size: 10px;
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────── -->
+<header>
+  <div style="display:flex;align-items:center">
+    <div class="logo">AimitraLens <span>— Agent Trace Visualizer</span></div>
+    <span class="header-meta" id="trace-meta"></span>
+  </div>
+  <div class="header-right">
+    <button id="btn-reset">Reset</button>
+    <button class="primary" id="btn-load">Load JSON File</button>
+    <input type="file" id="file-inp" accept=".json" style="display:none">
+  </div>
+</header>
+
+<!-- ── Drop zone ───────────────────────────────────────────────────────── -->
+<div id="dropzone">
+  <h2>Drop a trace JSON file here</h2>
+  <p>— or paste JSON and press Ctrl+Enter —</p>
+  <textarea id="paste-area" placeholder='{ "traceId": "...", "timeline": [ ... ] }'></textarea>
+  <button class="primary" id="btn-viz">Visualize</button>
+  <span class="drop-hint">Accepts <b>AimitraLens</b> traces (<code>TraceBuilder.ToJson()</code>) and Agentforce <b>PlanSuccessResponse</b> traces — auto-detected</span>
+</div>
+
+<!-- ── Main ────────────────────────────────────────────────────────────── -->
+<div id="main">
+
+  <!-- Left: graph -->
+  <div id="graph-panel">
+    <div class="panel-hdr">
+      <span>Agent Graph</span>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#1f6feb"></div>Agent</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#d29922;border-radius:50%"></div>Tool</div>
+      </div>
+    </div>
+    <div id="graph-svg-wrap"><svg id="graph-svg"></svg></div>
+    <div id="summary-bar"></div>
+
+    <!-- Section 1 : Agent / Sub-Agent Nodes -->
+    <div id="agents-panel">
+      <div class="panel-hdr">
+        <span>Agent / Sub-Agent Nodes</span>
+        <span id="agents-count" style="font-size:10px;color:var(--muted);font-weight:400"></span>
+      </div>
+      <div id="agents-list"></div>
+    </div>
+  </div>
+
+  <!-- Right: inspector -->
+  <div id="right-panel">
+    <div class="tabs">
+      <div class="tab active" data-tab="timeline">Timeline</div>
+      <div class="tab" data-tab="fsm">FSM States</div>
+      <div class="tab" data-tab="fsmmap">FSM Map</div>
+      <div class="tab" data-tab="flownav">Navigator</div>
+    </div>
+
+    <div id="timeline-tab" class="tab-content active">
+      <div id="timeline-list"></div>
+      <div id="inspector"><div class="empty-ins">← Select a step to inspect it</div></div>
+    </div>
+
+    <div id="fsm-tab" class="tab-content">
+      <div id="fsm-tab-content"></div>
+    </div>
+
+    <!-- Section 2 : FSM Map — visual state machine, color-coded by current position -->
+    <div id="fsmmap-tab" class="tab-content">
+      <div id="fsmmap-tab-content"></div>
+    </div>
+
+    <!-- Section 3 : Flow Navigator — step-by-step forward / backward navigation -->
+    <div id="flownav-tab" class="tab-content">
+      <div class="nav-controls">
+        <button class="nav-btn" id="nav-prev" title="Previous step (Left arrow)">&#9664;</button>
+        <div class="nav-progress-wrap">
+          <div class="nav-label" id="nav-label">No step selected</div>
+          <div class="nav-progress-bar"><div class="nav-progress-fill" id="nav-progress" style="width:0%"></div></div>
+        </div>
+        <button class="nav-btn" id="nav-next" title="Next step (Right arrow)">&#9654;</button>
+      </div>
+      <div class="nav-detail" id="nav-detail">
+        <div class="nav-empty">Use &#9664; &#9654; to walk through the data flow, or select any step from the Timeline tab</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── State ────────────────────────────────────────────────────────────────────
+let trace = null, selIdx = null;
+const _howToCodeMap = {};
+let _graphPos = {};       // node-id → {x,y,w,h} — written by renderGraph, read by centerGraphOnActive
+
+// ── Wire up entry points ─────────────────────────────────────────────────────
+document.getElementById('btn-load').addEventListener('click', () =>
+  document.getElementById('file-inp').click());
+
+document.getElementById('file-inp').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => tryLoad(ev.target.result);
+  r.readAsText(f); e.target.value = '';
+});
+
+document.getElementById('btn-viz').addEventListener('click', () => {
+  tryLoad(document.getElementById('paste-area').value.trim());
+});
+
+document.getElementById('paste-area').addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter') tryLoad(e.target.value.trim());
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  trace = null; selIdx = null;
+  document.getElementById('dropzone').style.display = 'flex';
+  document.getElementById('main').classList.remove('visible');
+  document.getElementById('paste-area').value = '';
+  document.getElementById('trace-meta').textContent = '';
+});
+
+// Drag-and-drop
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) { const r = new FileReader(); r.onload = ev => tryLoad(ev.target.result); r.readAsText(f); }
+});
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(t =>
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab + '-tab').classList.add('active');
+  })
+);
+
+// How-To panel: toggle + copy (event delegation on the inspector)
+document.getElementById('inspector').addEventListener('click', e => {
+  const toggle = e.target.closest('.how-to-toggle');
+  if (toggle) {
+    const body = toggle.nextElementSibling;
+    const isOpen = body.classList.toggle('open');
+    toggle.querySelector('.how-to-chevron').textContent = isOpen ? '▼' : '▶';
+    return;
+  }
+  const copyBtn = e.target.closest('.how-to-copy');
+  if (copyBtn) {
+    const code = _howToCodeMap[copyBtn.dataset.key] || '';
+    const finish = () => { copyBtn.textContent = 'Copied!'; setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500); };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(code).then(finish).catch(() => {
+        const ta = Object.assign(document.createElement('textarea'), { value: code });
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta); finish();
+      });
+    } else {
+      const ta = Object.assign(document.createElement('textarea'), { value: code });
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta); finish();
+    }
+  }
+});
+
+// Flow Navigator — prev / next buttons
+document.getElementById('nav-prev').addEventListener('click', () => {
+  if (!trace) return;
+  if (selIdx == null) { selectStep(0); return; }
+  if (selIdx > 0) selectStep(selIdx - 1);
+});
+document.getElementById('nav-next').addEventListener('click', () => {
+  if (!trace) return;
+  if (selIdx == null) { selectStep(0); return; }
+  if (selIdx < trace.timeline.length - 1) selectStep(selIdx + 1);
+});
+
+// Flow Navigator — keyboard arrow keys (active only when Navigator tab is visible)
+document.addEventListener('keydown', e => {
+  if (!trace) return;
+  const activeTab = document.querySelector('.tab.active')?.dataset?.tab;
+  if (activeTab !== 'flownav') return;
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); if (selIdx == null) selectStep(0); else if (selIdx > 0) selectStep(selIdx - 1); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); if (selIdx == null) selectStep(0); else if (selIdx < trace.timeline.length - 1) selectStep(selIdx + 1); }
+});
+
+// ── JSON repair (handles truncated pastes) ───────────────────────────────────
+function repairJson(txt) {
+  // First try as-is
+  try { return JSON.parse(txt); } catch (_) {}
+
+  // Strip trailing comma before a closing bracket/brace
+  let s = txt.trimEnd().replace(/,\s*$/, '');
+
+  // Walk the string tracking open brackets/braces and strings
+  const stack = [];
+  let inStr = false, escape = false;
+  for (const ch of s) {
+    if (escape)          { escape = false; continue; }
+    if (ch === '\\' && inStr) { escape = true; continue; }
+    if (ch === '"')      { inStr = !inStr; continue; }
+    if (inStr)           continue;
+    if (ch === '{' || ch === '[') stack.push(ch === '{' ? '}' : ']');
+    if (ch === '}' || ch === ']') stack.pop();
+  }
+
+  // Close any unclosed string first
+  if (inStr) s += '"';
+
+  // Close incomplete value at the end (e.g. trailing colon without value)
+  s = s.replace(/:\s*$/, ': null');
+
+  // Append closing brackets in reverse order
+  s += stack.reverse().join('');
+
+  try { return JSON.parse(s); } catch (_) { return null; }
+}
+
+// ── Load & render ────────────────────────────────────────────────────────────
+function tryLoad(txt) {
+  if (!txt) return;
+  let t = repairJson(txt);
+  if (!t) { alert('Could not parse JSON — please check for syntax errors.'); return; }
+  const wasRepaired = (() => { try { JSON.parse(txt); return false; } catch(_){ return true; } })();
+
+  // Auto-detect Agentforce PlanSuccessResponse and convert
+  if (t.type === 'PlanSuccessResponse' && Array.isArray(t.plan)) {
+    t = convertPlanSuccessResponse(t);
+  }
+
+  if (!Array.isArray(t.timeline) || t.timeline.length === 0) {
+    alert('Trace must have a non-empty "timeline" array.'); return;
+  }
+  trace = t; selIdx = null;
+  document.getElementById('dropzone').style.display = 'none';
+  document.getElementById('main').classList.add('visible');
+  document.getElementById('trace-meta').textContent =
+    (t.traceId ? '  #' + t.traceId.slice(0, 16) : '') +
+    (t.timestamp ? '  ·  ' + new Date(t.timestamp).toLocaleString() : '') +
+    (wasRepaired ? '  ⚠ partial trace' : '');
+  renderAll(t);
+}
+
+function renderAll(t) {
+  renderSummary(t);
+  renderGraph(t);
+  renderTimeline(t);
+  renderFSM(t);
+  renderAgentsTab(t);    // Section 1
+  renderFSMMapTab(t);    // Section 2
+  updateFlowNav();       // Section 3
+}
+
+// ── Summary bar ──────────────────────────────────────────────────────────────
+function renderSummary(t) {
+  const s = t.summary || {};
+  const ms  = s.totalDurationMs  || t.timeline.reduce((a, x) => a + (x.durationMs || 0), 0);
+  const tok = s.totalTokens || t.timeline.reduce((a, x) =>
+    a + (x.inspector?.usage?.totalTokens || 0), 0);
+  const agents = (s.agentsInvolved || [...new Set(t.timeline.map(x => x.component))]).length;
+  document.getElementById('summary-bar').innerHTML =
+    chip('⏱', ms.toLocaleString() + ' ms') +
+    chip('🔢', tok.toLocaleString() + ' tokens') +
+    chip('🤖', agents + ' components') +
+    chip('📋', t.timeline.length + ' steps');
+}
+function chip(icon, val) {
+  return `<div class="chip">${icon} <span class="v">${esc(val)}</span></div>`;
+}
+
+// ── Graph ─────────────────────────────────────────────────────────────────────
+function renderGraph(t) {
+  const svg = document.getElementById('graph-svg');
+  svg.innerHTML = '';
+
+  // Build nodes / edges — prefer explicit graph section, otherwise derive
+  let nodes, edges;
+  if (t.graph?.nodes?.length) {
+    nodes = t.graph.nodes;
+    edges = t.graph.edges || [];
+  } else {
+    const seen = new Map();
+    t.timeline.forEach(s => {
+      if (!seen.has(s.component))
+        seen.set(s.component, { id: s.component, type: s.type === 'TOOL_EXECUTION' ? 'tool' : 'agent', label: s.component });
+    });
+    nodes = [...seen.values()];
+    edges = [];
+    for (let i = 1; i < t.timeline.length; i++) {
+      const a = t.timeline[i-1], b = t.timeline[i];
+      if (a.component !== b.component)
+        edges.push({ source: a.component, target: b.component, order: i,
+          type: b.type === 'TOOL_EXECUTION' ? 'tool_call' : 'handoff' });
+    }
+  }
+
+  // Assign columns (BFS topological)
+  const inDeg = {}; nodes.forEach(n => inDeg[n.id] = 0);
+  edges.forEach(e => { if (inDeg[e.target] !== undefined) inDeg[e.target]++; });
+  const col = {};
+  const q = nodes.filter(n => !inDeg[n.id]).map(n => ({ id: n.id, c: 0 }));
+  const vis = new Set();
+  while (q.length) {
+    const { id, c } = q.shift();
+    if (vis.has(id)) continue; vis.add(id);
+    col[id] = Math.max(c, col[id] || 0);
+    edges.filter(e => e.source === id)
+         .sort((a, b) => a.order - b.order)
+         .forEach(e => q.push({ id: e.target, c: col[id] + 1 }));
+  }
+  nodes.forEach(n => { if (col[n.id] == null) col[n.id] = 0; });
+
+  // Group by column → assign x/y
+  const byCol = {};
+  nodes.forEach(n => { (byCol[col[n.id]] ??= []).push(n); });
+
+  const NW=148, NH=44, CGAP=90, RGAP=64, PAD=20;
+  const maxCol = Math.max(...Object.keys(byCol).map(Number));
+  const maxRow = Math.max(...Object.values(byCol).map(a => a.length));
+  const W = PAD*2 + (maxCol+1)*NW + maxCol*CGAP;
+  const H = PAD*2 + maxRow*NH + (maxRow-1)*RGAP + 10;
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('width', W); svg.setAttribute('height', Math.max(H, 180));
+
+  // Arrowhead markers
+  const defs = svgE('defs');
+  [['handoff','#3fb950'],['tool_call','#d29922'],['fallback','#f85149'],['default','#8b949e']].forEach(([id,color]) => {
+    const m = svgE('marker');
+    m.setAttribute('id', 'arr-'+id); m.setAttribute('markerWidth','7'); m.setAttribute('markerHeight','7');
+    m.setAttribute('refX','5'); m.setAttribute('refY','3'); m.setAttribute('orient','auto');
+    const p = svgE('polygon'); p.setAttribute('points','0 0,7 3,0 6'); p.setAttribute('fill',color);
+    m.appendChild(p); defs.appendChild(m);
+  });
+  // Active-edge white arrowhead
+  const activeM = svgE('marker');
+  activeM.setAttribute('id','arr-active'); activeM.setAttribute('markerWidth','7'); activeM.setAttribute('markerHeight','7');
+  activeM.setAttribute('refX','5'); activeM.setAttribute('refY','3'); activeM.setAttribute('orient','auto');
+  const activeP = svgE('polygon'); activeP.setAttribute('points','0 0,7 3,0 6'); activeP.setAttribute('fill','#ffffff');
+  activeM.appendChild(activeP); defs.appendChild(activeM);
+  // Glow filter for active elements
+  const filt = svgE('filter');
+  filt.setAttribute('id','active-glow'); filt.setAttribute('x','-40%'); filt.setAttribute('y','-40%');
+  filt.setAttribute('width','180%'); filt.setAttribute('height','180%');
+  const blur = svgE('feGaussianBlur'); blur.setAttribute('in','SourceGraphic'); blur.setAttribute('stdDeviation','4'); blur.setAttribute('result','blur');
+  const merge = svgE('feMerge');
+  const mn1 = svgE('feMergeNode'); mn1.setAttribute('in','blur');
+  const mn2 = svgE('feMergeNode'); mn2.setAttribute('in','SourceGraphic');
+  merge.appendChild(mn1); merge.appendChild(mn2);
+  filt.appendChild(blur); filt.appendChild(merge); defs.appendChild(filt);
+  svg.appendChild(defs);
+
+  // Position map
+  const pos = {};
+  Object.entries(byCol).forEach(([c, ns]) => {
+    const x = PAD + Number(c) * (NW + CGAP);
+    const totalH = ns.length*NH + (ns.length-1)*RGAP;
+    const sy = PAD + (H - PAD*2 - totalH) / 2;
+    ns.forEach((n, i) => pos[n.id] = { x, y: sy + i*(NH+RGAP), w: NW, h: NH });
+  });
+  _graphPos = pos;  // expose for scroll-to-center
+
+  // Active edge: the transition that brought us to the current step
+  const _aeSrc = selIdx != null && selIdx > 0 ? trace?.timeline[selIdx - 1]?.component : null;
+  const _aeTgt = selIdx != null              ? trace?.timeline[selIdx]?.component     : null;
+
+  // Draw edges
+  edges.forEach(e => {
+    const sp = pos[e.source], tp = pos[e.target]; if (!sp || !tp) return;
+    const type = e.type || 'default';
+    const color = type==='handoff'?'#3fb950': type==='tool_call'?'#d29922': type==='fallback'?'#f85149':'#8b949e';
+    const x1=sp.x+sp.w, y1=sp.y+sp.h/2, x2=tp.x, y2=tp.y+tp.h/2;
+    const cx=(x1+x2)/2;
+    const isActive = e.source === _aeSrc && e.target === _aeTgt;
+    const g = svgE('g'); g.setAttribute('class', isActive ? 'gedge gedge-active' : 'gedge');
+    const d = `M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2-5},${y2}`;
+    // Glow halo behind active edge
+    if (isActive) {
+      const glow = svgE('path');
+      glow.setAttribute('d', d);
+      glow.setAttribute('stroke', color); glow.setAttribute('stroke-width', '8');
+      glow.setAttribute('fill', 'none'); glow.setAttribute('opacity', '0.35');
+      glow.setAttribute('filter', 'url(#active-glow)');
+      g.appendChild(glow);
+    }
+    const path = svgE('path');
+    path.setAttribute('class', 'edge-main');
+    path.setAttribute('d', d);
+    path.setAttribute('stroke', isActive ? '#ffffff' : color);
+    path.setAttribute('stroke-width', isActive ? '2.5' : '1.5');
+    path.setAttribute('fill','none');
+    path.setAttribute('marker-end', isActive ? 'url(#arr-active)' : `url(#arr-${type})`);
+    g.appendChild(path);
+    // Edge label
+    const lbl = svgE('text');
+    lbl.setAttribute('x', cx); lbl.setAttribute('y', (y1+y2)/2-6);
+    lbl.setAttribute('text-anchor','middle'); lbl.setAttribute('fill', isActive ? '#ffffff' : color);
+    lbl.setAttribute('font-size', isActive ? '10' : '9'); lbl.setAttribute('font-family','monospace');
+    lbl.setAttribute('font-weight', isActive ? '700' : '400');
+    lbl.textContent = (e.order ? e.order+'. ' : '') + type.replace('_',' ');
+    g.appendChild(lbl);
+    svg.appendChild(g);
+  });
+
+  // Draw nodes
+  nodes.forEach(n => {
+    const p = pos[n.id]; if (!p) return;
+    const isAgent = n.type !== 'tool';
+    const fill   = isAgent ? 'rgba(31,111,235,.22)' : 'rgba(210,153,34,.18)';
+    const stroke = isAgent ? '#1f6feb' : '#d29922';
+    const active = selIdx != null && trace.timeline[selIdx]?.component === n.id;
+
+    const g = svgE('g'); g.setAttribute('class','gnode');
+    // Pulsing halo behind active node
+    if (active) {
+      const halo = svgE('rect');
+      halo.setAttribute('class', 'gnode-halo');
+      halo.setAttribute('x', p.x - 7);  halo.setAttribute('y', p.y - 7);
+      halo.setAttribute('width', p.w + 14); halo.setAttribute('height', p.h + 14);
+      halo.setAttribute('rx', '13'); halo.setAttribute('ry', '13');
+      halo.setAttribute('fill', isAgent ? 'rgba(88,166,255,.22)' : 'rgba(255,195,80,.18)');
+      halo.setAttribute('stroke', isAgent ? '#58a6ff' : '#f0b429');
+      halo.setAttribute('stroke-width', '1.5');
+      g.appendChild(halo);
+    }
+    const r = svgE('rect');
+    r.setAttribute('x',p.x); r.setAttribute('y',p.y);
+    r.setAttribute('width',p.w); r.setAttribute('height',p.h);
+    r.setAttribute('rx','8'); r.setAttribute('ry','8');
+    r.setAttribute('fill', active ? (isAgent?'rgba(31,111,235,.58)':'rgba(210,153,34,.52)') : fill);
+    r.setAttribute('stroke', active ? (isAgent ? '#58a6ff' : '#f0b429') : stroke);
+    r.setAttribute('stroke-width', active ? '2.5' : '1.5');
+    if (active) r.setAttribute('filter', 'url(#active-glow)');
+    g.appendChild(r);
+
+    const lbl = n.label || n.id;
+    const disp = lbl.length > 17 ? lbl.slice(0,15)+'…' : lbl;
+    const tx = svgE('text');
+    tx.setAttribute('x', p.x+p.w/2); tx.setAttribute('y', p.y+p.h/2+4);
+    tx.setAttribute('text-anchor','middle'); tx.setAttribute('fill','#e6edf3');
+    tx.setAttribute('font-size','11');
+    tx.setAttribute('font-family',"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif");
+    tx.textContent = disp;
+    g.appendChild(tx);
+
+    // type badge
+    const tb = svgE('text');
+    tb.setAttribute('x',p.x+p.w-5); tb.setAttribute('y',p.y+11);
+    tb.setAttribute('text-anchor','end'); tb.setAttribute('fill',stroke);
+    tb.setAttribute('font-size','8'); tb.setAttribute('font-family','monospace');
+    tb.textContent = (n.type||'agent').toUpperCase();
+    g.appendChild(tb);
+
+    svg.appendChild(g);
+  });
+}
+
+// Smoothly scroll the graph panel to keep the active node centred in view
+function centerGraphOnActive() {
+  if (selIdx == null || !trace) return;
+  const comp = trace.timeline[selIdx]?.component;
+  if (!comp || !_graphPos[comp]) return;
+  const p    = _graphPos[comp];
+  const wrap = document.getElementById('graph-svg-wrap');
+  if (!wrap) return;
+  // Target scroll so the node centre is in the middle of the visible area
+  const cx = p.x + p.w / 2;
+  const cy = p.y + p.h / 2;
+  wrap.scrollTo({
+    left: Math.max(0, cx - wrap.clientWidth  / 2),
+    top:  Math.max(0, cy - wrap.clientHeight / 2),
+    behavior: 'smooth'
+  });
+}
+
+// ── Timeline ─────────────────────────────────────────────────────────────────
+function renderTimeline(t) {
+  const list = document.getElementById('timeline-list');
+  list.innerHTML = '';
+  t.timeline.forEach((s, i) => {
+    const ok = s.status === 'Success';
+    const el = document.createElement('div');
+    el.className = 'tl-item' + (s.parentSpanId && s.parentSpanId !== '0000000000000000' ? ' child' : '');
+    el.dataset.i = i;
+    const badge = typeBadge(s.type);
+    el.innerHTML = `
+      <div class="step-num ${ok?'ok':(s.status==='Error'?'err':'')}">${s.step||i+1}</div>
+      <div class="step-info">
+        <div class="step-comp">${esc(s.component||'Unknown')}</div>
+        <div class="step-meta">
+          ${badge}
+          ${s.durationMs ? `<span class="step-dur">${s.durationMs} ms</span>` : ''}
+          ${s.status ? `<span class="step-status" style="color:${ok?'var(--success)':'var(--error)'}">${esc(s.status)}</span>` : ''}
+        </div>
+      </div>`;
+    el.addEventListener('click', () => selectStep(i));
+    list.appendChild(el);
+  });
+}
+
+function typeBadge(type) {
+  if (!type) return '';
+  const t = type.toUpperCase();
+  if (t === 'USER_INPUT')        return `<span class="badge b-user">User</span>`;
+  if (t === 'PLANNER_RESPONSE')  return `<span class="badge b-planner">Response</span>`;
+  if (t === 'HANDOFF')           return `<span class="badge b-handoff2">Handoff</span>`;
+  if (t.includes('LLM'))         return `<span class="badge b-llm">LLM</span>`;
+  if (t.includes('TOOL'))        return `<span class="badge b-tool">Tool</span>`;
+  if (t.includes('HANDOFF'))     return `<span class="badge b-handoff">Handoff</span>`;
+  return `<span class="badge b-other">${esc(type)}</span>`;
+}
+
+function selectStep(i) {
+  selIdx = i;
+  document.querySelectorAll('.tl-item').forEach(el =>
+    el.classList.toggle('sel', Number(el.dataset.i) === i));
+  renderGraph(trace);
+  centerGraphOnActive();   // pan + center the graph on the active node
+  renderInspector(trace.timeline[i]);
+  renderAgentsTab(trace);  // refresh active-agent highlight
+  renderFSMMapTab(trace);  // re-color FSM nodes
+  updateFlowNav();         // sync navigator
+}
+
+// ── Inspector ────────────────────────────────────────────────────────────────
+function renderInspector(s) {
+  const panel = document.getElementById('inspector');
+  if (!s) { panel.innerHTML = '<div class="empty-ins">← Select a step</div>'; return; }
+  const ins = s.inspector || {};
+  const fsm = s.fsmState  || {};
+  let h = `<div class="ins-title">
+    <span>Step ${s.step||''} — ${esc(s.component||'')}</span>
+    <span class="span-id">${s.spanId ? 'span: '+s.spanId : ''}</span>
+  </div>`;
+
+  if (fsm.currentState)
+    h += `<div class="fld"><div class="fld-lbl">FSM State</div>
+      <div><span class="fsm-pill">◉ ${esc(fsm.currentState)}</span></div></div>`;
+
+  if (fsm.variableDiff && Object.keys(fsm.variableDiff).length)
+    h += `<div class="fld"><div class="fld-lbl">Variable Diff</div>
+      <div class="var-table">${
+        Object.entries(fsm.variableDiff).map(([k,v]) =>
+          `<div class="var-row"><div class="var-k">${esc(k)}</div><div class="var-v">${esc(val(v))}</div></div>`
+        ).join('')
+      }</div></div>`;
+
+  if (ins.systemPrompt)  h += fld('System Prompt',  ins.systemPrompt);
+  if (ins.userMessage)   h += fld('User Message',    ins.userMessage);
+  if (ins.modelOutput)   h += fld('Model Output',    ins.modelOutput);
+
+  if (ins.toolName)
+    h += `<div class="fld"><div class="fld-lbl">Tool</div>
+      <div style="font-size:12px;color:var(--warn);font-family:monospace">${esc(ins.toolName)}</div></div>`;
+  if (ins.toolInput  != null) h += fld('Tool Input',  val(ins.toolInput));
+  if (ins.toolOutput != null) h += fld('Tool Output', val(ins.toolOutput));
+
+  if (ins.usage)
+    h += `<div class="fld"><div class="fld-lbl">Token Usage</div>
+      <div class="tok-row">
+        ${ins.usage.promptTokens     != null ? `<div class="tok">Prompt <span class="v">${ins.usage.promptTokens}</span></div>` : ''}
+        ${ins.usage.completionTokens != null ? `<div class="tok">Completion <span class="v">${ins.usage.completionTokens}</span></div>` : ''}
+        ${ins.usage.totalTokens      != null ? `<div class="tok">Total <span class="v">${ins.usage.totalTokens}</span></div>` : ''}
+      </div></div>`;
+
+  h += renderHowTo(s);
+  panel.innerHTML = h || '<div class="empty-ins">No detail for this step.</div>';
+}
+
+function fld(label, value) {
+  return `<div class="fld"><div class="fld-lbl">${esc(label)}</div>
+    <div class="fld-val">${esc(String(value ?? ''))}</div></div>`;
+}
+function val(v) { return v == null ? 'null' : typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v); }
+
+// ════════════════════════════════════════════════════════════════════════════
+// SECTION 1 — Agent / Sub-Agent Nodes
+// ════════════════════════════════════════════════════════════════════════════
+function renderAgentsTab(t) {
+  const list = document.getElementById('agents-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  // Build agent-only node list (exclude tool nodes)
+  let agentNodes;
+  if (t.graph?.nodes?.length) {
+    agentNodes = t.graph.nodes.filter(n => n.type !== 'tool');
+  } else {
+    const seen = new Map();
+    t.timeline.forEach(s => {
+      if (s.type !== 'TOOL_EXECUTION' && !seen.has(s.component))
+        seen.set(s.component, { id: s.component, type: 'agent', label: s.component });
+    });
+    agentNodes = [...seen.values()];
+  }
+
+  // Per-agent stats derived from timeline
+  const stats = {};
+  t.timeline.forEach((s, i) => {
+    if (!stats[s.component]) stats[s.component] = { steps: 0, dur: 0, states: new Set(), errors: 0, indices: [] };
+    stats[s.component].steps++;
+    stats[s.component].dur += s.durationMs || 0;
+    stats[s.component].indices.push(i);
+    if (s.fsmState?.currentState) stats[s.component].states.add(s.fsmState.currentState);
+    if (s.status === 'Error') stats[s.component].errors++;
+  });
+
+  const countEl = document.getElementById('agents-count');
+  if (countEl) countEl.textContent = agentNodes.length + ' agent' + (agentNodes.length !== 1 ? 's' : '');
+
+  if (!agentNodes.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:10px 8px">No agent nodes found.</div>';
+    return;
+  }
+
+  const activeComp = selIdx != null ? t.timeline[selIdx]?.component : null;
+
+  agentNodes.forEach(n => {
+    const st  = stats[n.id] || { steps: 0, dur: 0, states: new Set(), errors: 0, indices: [] };
+    const isActive = n.id === activeComp;
+    const hasErr   = st.errors > 0;
+    const icon = n.id === 'User' ? '👤' : n.id === 'Planner' ? '🗂' : '🤖';
+    const el = document.createElement('div');
+    el.className = 'agent-card' + (isActive ? ' active-step' : '');
+    el.innerHTML = `
+      <div class="agent-icon">${icon}</div>
+      <div class="agent-info">
+        <div class="agent-name">${esc(n.label || n.id)}</div>
+        <div class="agent-stats">
+          <span>${st.steps} step${st.steps !== 1 ? 's' : ''}</span>
+          <span>·</span>
+          <span style="color:var(--text)">${st.dur.toLocaleString()} ms</span>
+          <span>·</span>
+          <span>${st.states.size} FSM state${st.states.size !== 1 ? 's' : ''}</span>
+          ${hasErr ? `<span style="color:var(--error)">· ${st.errors} err</span>` : ''}
+        </div>
+      </div>
+      <div class="agent-dot" style="background:${hasErr ? 'var(--error)' : 'var(--success)'}"></div>`;
+    // Click → jump to first timeline step for this agent
+    el.addEventListener('click', () => {
+      const firstIdx = st.indices[0] ?? -1;
+      if (firstIdx < 0) return;
+      document.querySelectorAll('.tab,.tab-content').forEach(e => e.classList.remove('active'));
+      document.querySelector('[data-tab="timeline"]').classList.add('active');
+      document.getElementById('timeline-tab').classList.add('active');
+      selectStep(firstIdx);
+      setTimeout(() => {
+        const item = document.querySelector(`.tl-item[data-i="${firstIdx}"]`);
+        if (item) item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 50);
+    });
+    list.appendChild(el);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SECTION 2 — FSM Map: visual state machine, color-coded by execution position
+// ════════════════════════════════════════════════════════════════════════════
+function renderFSMMapTab(t) {
+  const cont = document.getElementById('fsmmap-tab-content');
+  if (!cont) return;
+  cont.innerHTML = '';
+
+  // Ordered list of unique FSM state appearances
+  const stateSeq = [];  // { state, stepIdx, component }
+  t.timeline.forEach((s, i) => {
+    if (!s.fsmState?.currentState) return;
+    const last = stateSeq[stateSeq.length - 1];
+    if (!last || last.state !== s.fsmState.currentState)
+      stateSeq.push({ state: s.fsmState.currentState, stepIdx: i, component: s.component });
+  });
+
+  if (!stateSeq.length) {
+    cont.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px">No FSM state data in this trace.</div>';
+    return;
+  }
+
+  // Unique states map: state → { visits: [stepIdx], component }
+  const stateMap = new Map();
+  stateSeq.forEach(ss => {
+    if (!stateMap.has(ss.state))
+      stateMap.set(ss.state, { visits: [], component: ss.component });
+    stateMap.get(ss.state).visits.push(ss.stepIdx);
+  });
+  const states = [...stateMap.entries()].map(([id, d]) => ({ id, ...d }));
+
+  // Transitions (unique pairs, in order of first occurrence)
+  const transitions = [];
+  for (let i = 1; i < stateSeq.length; i++) {
+    const from = stateSeq[i - 1].state, to = stateSeq[i].state;
+    if (from !== to && !transitions.find(e => e.from === from && e.to === to))
+      transitions.push({ from, to });
+  }
+
+  // Which states are visited / current (based on selIdx)
+  const currentState = selIdx != null ? t.timeline[selIdx]?.fsmState?.currentState : null;
+  const visitedStates = new Set();
+  if (selIdx != null) {
+    for (let i = 0; i <= selIdx; i++)
+      if (t.timeline[i]?.fsmState?.currentState)
+        visitedStates.add(t.timeline[i].fsmState.currentState);
+  }
+
+  // Layout: grid with up to 3 columns
+  const COLS = 3, SW = 162, SH = 42, HGAP = 22, VGAP = 52, PAD = 14;
+  const rows = Math.ceil(states.length / COLS);
+  const W = PAD * 2 + COLS * SW + (COLS - 1) * HGAP;
+  const H = PAD * 2 + rows * SH + (rows - 1) * VGAP;
+
+  const posMap = {};
+  states.forEach((s, i) => {
+    const col = i % COLS, row = Math.floor(i / COLS);
+    posMap[s.id] = { x: PAD + col * (SW + HGAP), y: PAD + row * (SH + VGAP), w: SW, h: SH };
+  });
+
+  const NS = 'http://www.w3.org/2000/svg';
+  function se(tag) { return document.createElementNS(NS, tag); }
+
+  const svg = se('svg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('width', W); svg.setAttribute('height', H);
+
+  // Arrowhead marker
+  const defs = se('defs');
+  const mk = se('marker');
+  mk.setAttribute('id', 'fsm-arr'); mk.setAttribute('markerWidth', '7');
+  mk.setAttribute('markerHeight', '7'); mk.setAttribute('refX', '5');
+  mk.setAttribute('refY', '3'); mk.setAttribute('orient', 'auto');
+  const mkp = se('polygon'); mkp.setAttribute('points', '0 0,7 3,0 6'); mkp.setAttribute('fill', '#8b949e');
+  mk.appendChild(mkp); defs.appendChild(mk); svg.appendChild(defs);
+
+  // Draw transition arrows
+  transitions.forEach(tr => {
+    const sp = posMap[tr.from], tp = posMap[tr.to];
+    if (!sp || !tp) return;
+    const path = se('path');
+    const x1 = sp.x + sp.w / 2, y1 = sp.y + sp.h;
+    const x2 = tp.x + tp.w / 2, y2 = tp.y;
+    const cy = (y1 + y2) / 2;
+    path.setAttribute('d', Math.abs(x1 - x2) < 4
+      ? `M${x1},${y1} L${x2},${y2 - 6}`
+      : `M${x1},${y1} C${x1},${cy} ${x2},${cy} ${x2},${y2 - 6}`);
+    path.setAttribute('stroke', '#8b949e');
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('marker-end', 'url(#fsm-arr)');
+    svg.appendChild(path);
+  });
+
+  // Draw state nodes
+  states.forEach(s => {
+    const p   = posMap[s.id];
+    const isCur = s.id === currentState;
+    const isVis = visitedStates.has(s.id);
+    const fill   = isCur ? 'rgba(63,185,80,.32)'
+                 : isVis ? 'rgba(88,166,255,.16)'
+                 : 'rgba(139,148,158,.07)';
+    const stroke = isCur ? '#3fb950' : isVis ? '#58a6ff' : '#30363d';
+    const tcolor = isCur ? '#3fb950' : isVis ? '#e6edf3' : '#8b949e';
+
+    const g = se('g'); g.setAttribute('class', 'fsm-map-node');
+    const rect = se('rect');
+    rect.setAttribute('x', p.x); rect.setAttribute('y', p.y);
+    rect.setAttribute('width', p.w); rect.setAttribute('height', p.h);
+    rect.setAttribute('rx', '8'); rect.setAttribute('fill', fill);
+    rect.setAttribute('stroke', stroke); rect.setAttribute('stroke-width', isCur ? '2' : '1');
+    g.appendChild(rect);
+
+    // Pulsing dot for current state
+    if (isCur) {
+      const dot = se('circle');
+      dot.setAttribute('cx', p.x + 11); dot.setAttribute('cy', p.y + p.h / 2);
+      dot.setAttribute('r', '4'); dot.setAttribute('fill', '#3fb950');
+      g.appendChild(dot);
+    }
+
+    const label = s.id.length > 21 ? s.id.slice(0, 19) + '…' : s.id;
+    const tx = se('text');
+    tx.setAttribute('x', p.x + p.w / 2 + (isCur ? 4 : 0));
+    tx.setAttribute('y', p.y + p.h / 2 + 4);
+    tx.setAttribute('text-anchor', 'middle'); tx.setAttribute('fill', tcolor);
+    tx.setAttribute('font-size', '10'); tx.setAttribute('font-family', 'monospace');
+    tx.textContent = label;
+    g.appendChild(tx);
+
+    // Repeat-visit badge
+    if (s.visits.length > 1) {
+      const badge = se('text');
+      badge.setAttribute('x', p.x + p.w - 4); badge.setAttribute('y', p.y + 11);
+      badge.setAttribute('text-anchor', 'end');
+      badge.setAttribute('fill', isVis ? '#58a6ff' : '#8b949e');
+      badge.setAttribute('font-size', '8'); badge.setAttribute('font-family', 'monospace');
+      badge.textContent = '\u00d7' + s.visits.length;
+      g.appendChild(badge);
+    }
+
+    // Click → switch to Timeline and select first step with this state
+    g.addEventListener('click', () => {
+      const firstIdx = s.visits[0];
+      if (firstIdx == null) return;
+      document.querySelectorAll('.tab,.tab-content').forEach(e => e.classList.remove('active'));
+      document.querySelector('[data-tab="timeline"]').classList.add('active');
+      document.getElementById('timeline-tab').classList.add('active');
+      selectStep(firstIdx);
+      setTimeout(() => {
+        const item = document.querySelector(`.tl-item[data-i="${firstIdx}"]`);
+        if (item) item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 50);
+    });
+    svg.appendChild(g);
+  });
+
+  // Legend
+  const leg = document.createElement('div');
+  leg.className = 'fsm-map-legend';
+  leg.innerHTML = `
+    <div class="fsm-map-leg-item"><span class="fsm-map-leg-dot" style="background:rgba(63,185,80,.32);border:1.5px solid #3fb950"></span>Current</div>
+    <div class="fsm-map-leg-item"><span class="fsm-map-leg-dot" style="background:rgba(88,166,255,.16);border:1px solid #58a6ff"></span>Visited</div>
+    <div class="fsm-map-leg-item"><span class="fsm-map-leg-dot" style="background:rgba(139,148,158,.07);border:1px solid #30363d"></span>Pending</div>
+    <div style="margin-left:auto;font-size:10px;color:var(--muted)">${states.length} states &middot; ${transitions.length} transitions</div>`;
+  cont.appendChild(leg);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'fsm-map-svg-wrap';
+  wrap.appendChild(svg);
+  cont.appendChild(wrap);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SECTION 3 — Flow Navigator: prev/next step with full node details
+// ════════════════════════════════════════════════════════════════════════════
+function updateFlowNav() {
+  if (!trace) return;
+  const total   = trace.timeline.length;
+  const idx     = selIdx ?? -1;
+  const s       = idx >= 0 ? trace.timeline[idx] : null;
+
+  const prevBtn = document.getElementById('nav-prev');
+  const nextBtn = document.getElementById('nav-next');
+  const labelEl = document.getElementById('nav-label');
+  const fillEl  = document.getElementById('nav-progress');
+  const detail  = document.getElementById('nav-detail');
+
+  if (prevBtn) prevBtn.disabled = idx <= 0;
+  if (nextBtn) nextBtn.disabled = !trace || (idx >= 0 && idx >= total - 1);
+  if (labelEl) labelEl.textContent = idx >= 0 ? `Step ${idx + 1} of ${total}` : `0 of ${total} — select any step`;
+  if (fillEl)  fillEl.style.width  = idx >= 0 ? `${((idx + 1) / total) * 100}%` : '0%';
+
+  if (!detail) return;
+  if (!s) {
+    detail.innerHTML = '<div class="nav-empty">Use &#9664; &#9654; to walk through the data flow, or select any step from the Timeline tab<div class="nav-kboard" style="justify-content:center;margin-top:8px"><kbd>\u2190</kbd>&nbsp;Prev&nbsp;&nbsp;<kbd>\u2192</kbd>&nbsp;Next</div></div>';
+    return;
+  }
+
+  const ins = s.inspector || {};
+  const fsm = s.fsmState  || {};
+  const ok  = s.status === 'Success', err = s.status === 'Error';
+  const prev = idx > 0 ? trace.timeline[idx - 1] : null;
+  const next = idx < total - 1 ? trace.timeline[idx + 1] : null;
+
+  let h = `<div class="nav-step-header">
+    <div class="nav-step-num ${ok ? 'ok' : err ? 'err' : ''}">${s.step || idx + 1}</div>
+    <div>
+      <div class="nav-step-name">${esc(s.component || 'Unknown')}</div>
+      <div class="nav-step-meta">
+        ${typeBadge(s.type)}
+        ${s.durationMs ? `<span class="step-dur">${s.durationMs} ms</span>` : ''}
+        ${s.status ? `<span style="color:${ok ? 'var(--success)' : 'var(--error)'}">${esc(s.status)}</span>` : ''}
+      </div>
+    </div>
+  </div>`;
+
+  // Data flow context
+  h += `<div class="fld"><div class="fld-lbl">Data Flow</div>
+    <div class="nav-flow">
+      <div class="nav-flow-row" style="color:var(--muted)">
+        <span>&#8592;</span>
+        <span>${prev ? `From: <span style="color:var(--text);font-weight:500">${esc(prev.component)}</span> <span style="opacity:.55">(${esc(prev.type || '')})</span>` : 'Start of trace'}</span>
+      </div>
+      <div class="nav-flow-row nav-flow-cur">
+        <span>&#9679;</span>
+        <span>${esc(s.component)} &mdash; ${esc(s.type || '')}</span>
+      </div>
+      <div class="nav-flow-row" style="color:var(--muted)">
+        <span>&#8594;</span>
+        <span>${next ? `To: <span style="color:var(--text);font-weight:500">${esc(next.component)}</span> <span style="opacity:.55">(${esc(next.type || '')})</span>` : 'End of trace'}</span>
+      </div>
+    </div>
+  </div>`;
+
+  if (fsm.currentState)
+    h += `<div class="fld"><div class="fld-lbl">FSM State</div>
+      <div><span class="fsm-pill">\u25c9 ${esc(fsm.currentState)}</span></div></div>`;
+
+  if (fsm.variableDiff && Object.keys(fsm.variableDiff).length)
+    h += `<div class="fld"><div class="fld-lbl">Variable Diff</div>
+      <div class="var-table">${
+        Object.entries(fsm.variableDiff).map(([k, v]) =>
+          `<div class="var-row"><div class="var-k">${esc(k)}</div><div class="var-v">${esc(val(v))}</div></div>`
+        ).join('')
+      }</div></div>`;
+
+  if (ins.systemPrompt) h += fld('System Prompt', ins.systemPrompt);
+  if (ins.userMessage)  h += fld('User Message',  ins.userMessage);
+  if (ins.modelOutput)  h += fld('Model Output',  ins.modelOutput);
+  if (ins.toolName)
+    h += `<div class="fld"><div class="fld-lbl">Tool</div>
+      <div style="font-size:12px;color:var(--warn);font-family:monospace">${esc(ins.toolName)}</div></div>`;
+  if (ins.toolInput  != null) h += fld('Tool Input',  val(ins.toolInput));
+  if (ins.toolOutput != null) h += fld('Tool Output', val(ins.toolOutput));
+  if (ins.usage)
+    h += `<div class="fld"><div class="fld-lbl">Token Usage</div>
+      <div class="tok-row">
+        ${ins.usage.promptTokens     != null ? `<div class="tok">Prompt <span class="v">${ins.usage.promptTokens}</span></div>` : ''}
+        ${ins.usage.completionTokens != null ? `<div class="tok">Completion <span class="v">${ins.usage.completionTokens}</span></div>` : ''}
+        ${ins.usage.totalTokens      != null ? `<div class="tok">Total <span class="v">${ins.usage.totalTokens}</span></div>` : ''}
+      </div></div>`;
+
+  h += `<div class="nav-kboard"><kbd>\u2190</kbd>&nbsp;Prev&nbsp;&nbsp;<kbd>\u2192</kbd>&nbsp;Next&nbsp;&nbsp;<span style="color:var(--muted)">(arrow keys work in this tab)</span></div>`;
+
+  detail.innerHTML = h;
+}
+
+// ── How-To guide ──────────────────────────────────────────────────────────────
+function renderHowTo(s) {
+  const type = (s.type || '').toUpperCase();
+  const toolName = s.inspector?.toolName || 'MyPlugin';
+
+  const guides = {
+    LLM_CALL: {
+      title: 'LLM Call — Semantic Kernel (C#)',
+      code:
+`// 1. Build a Kernel with a chat completion backend
+var kernel = Kernel.CreateBuilder()
+    .AddAzureOpenAIChatCompletion(
+        deploymentName: "gpt-4o",
+        endpoint: config["AZURE_OPENAI_ENDPOINT"],
+        apiKey:   config["AZURE_OPENAI_KEY"])
+    .Build();
+
+// 2. Build a chat history
+var history = new ChatHistory();
+history.AddSystemMessage("You are a helpful assistant.");
+history.AddUserMessage(userInput);
+
+// 3. Call the model
+var chat  = kernel.GetRequiredService<IChatCompletionService>();
+var reply = await chat.GetChatMessageContentAsync(history, kernel: kernel);
+Console.WriteLine(reply.Content);`
+    },
+    TOOL_EXECUTION: {
+      title: 'Plugin / Tool — Semantic Kernel (C#)',
+      code:
+`// 1. Define the plugin class with annotated methods
+public class ${toolName}Plugin
+{
+    [KernelFunction]
+    [Description("${toolName} — describe what this function does")]
+    public async Task<string> ExecuteAsync(
+        [Description("Input value")] string input)
+    {
+        // ... tool logic ...
+        return result;
+    }
+}
+
+// 2. Register the plugin on the kernel
+kernel.Plugins.AddFromType<${toolName}Plugin>();
+
+// 3. Enable auto function-calling in chat
+var settings = new AzureOpenAIPromptExecutionSettings
+    { ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions };
+var reply = await chat.GetChatMessageContentAsync(history, settings, kernel);`
+    },
+    HANDOFF: {
+      title: 'Agent Handoff — AgentGroupChat (C#)',
+      code:
+`// 1. Create agents
+var agentA = new ChatCompletionAgent {
+    Name = "AgentA", Kernel = kernelA,
+    Instructions = "Handle topic A. Delegate to AgentB when specialised." };
+var agentB = new ChatCompletionAgent {
+    Name = "AgentB", Kernel = kernelB,
+    Instructions = "Handle topic B." };
+
+// 2. Set up group chat with a selection strategy
+var groupChat = new AgentGroupChat(agentA, agentB)
+{
+    ExecutionSettings = new AgentGroupChatSettings
+    {
+        SelectionStrategy  = new KernelFunctionSelectionStrategy(
+            KernelFunctionFactory.CreateFromPrompt(selectionPrompt), kernel),
+        TerminationStrategy = new ApprovalTerminationStrategy()
+    }
+};
+
+// 3. Run the conversation
+await foreach (var msg in groupChat.InvokeAsync())
+    Console.WriteLine($"[{msg.AuthorName}]: {msg.Content}");`
+    },
+    USER_INPUT: {
+      title: 'Capturing User Input (C#)',
+      code:
+`// Console loop — minimal example
+var history = new ChatHistory();
+
+while (true)
+{
+    Console.Write("You: ");
+    var input = Console.ReadLine();
+    if (string.IsNullOrWhiteSpace(input)) break;
+
+    history.AddUserMessage(input);
+
+    // Pass to your agent / orchestrator
+    var response = await agent.InvokeAsync(history);
+    history.AddAssistantMessage(response);
+    Console.WriteLine($"Agent: {response}");
+}`
+    },
+    PLANNER_RESPONSE: {
+      title: 'Stepwise Planner Response (C#)',
+      code:
+`// FunctionCallingStepwisePlanner decomposes a goal into steps
+var planner = new FunctionCallingStepwisePlanner(
+    new FunctionCallingStepwisePlannerOptions
+    {
+        MaxIterations     = 10,
+        MaxTokens         = 4096,
+        ExecutionSettings = new AzureOpenAIPromptExecutionSettings
+            { ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions }
+    });
+
+// Register required plugins before executing
+kernel.Plugins.AddFromType<SearchPlugin>();
+kernel.Plugins.AddFromType<DatabasePlugin>();
+
+var result = await planner.ExecuteAsync(kernel, goal: "Summarise this week's sales");
+Console.WriteLine("Final answer: " + result.FinalAnswer);`
+    }
+  };
+
+  let key = type;
+  if (type.includes('LLM'))          key = 'LLM_CALL';
+  else if (type.includes('TOOL'))    key = 'TOOL_EXECUTION';
+  else if (type.includes('HANDOFF')) key = 'HANDOFF';
+
+  const guide = guides[key];
+  if (!guide) return '';
+
+  const mapKey = 'ht_' + Math.random().toString(36).slice(2);
+  _howToCodeMap[mapKey] = guide.code;
+
+  return `
+    <div class="how-to-section">
+      <div class="how-to-toggle">
+        <span class="how-to-chevron">▶</span>
+        <span>How to implement this step</span>
+      </div>
+      <div class="how-to-body">
+        <div class="how-to-title">${esc(guide.title)}</div>
+        <pre class="how-to-code">${esc(guide.code)}</pre>
+        <div class="how-to-actions">
+          <button class="how-to-copy" data-key="${mapKey}">Copy</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── FSM tab ───────────────────────────────────────────────────────────────────
+function renderFSM(t) {
+  const cont = document.getElementById('fsm-tab-content');
+  cont.innerHTML = '';
+  const steps = t.timeline.filter(s => s.fsmState?.currentState);
+  if (!steps.length) {
+    cont.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px">No FSM state data in this trace.</div>';
+    return;
+  }
+  steps.forEach((s, i) => {
+    if (i > 0) {
+      const a = document.createElement('div');
+      a.className = 'fsm-arrow'; a.textContent = '↓'; cont.appendChild(a);
+    }
+    const idx = t.timeline.indexOf(s);
+    const el = document.createElement('div');
+    el.className = 'fsm-item';
+    el.innerHTML = `
+      <div style="min-width:20px;font-size:10px;color:var(--muted);font-weight:700">${s.step||i+1}</div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--accent)">${esc(s.fsmState.currentState)}</div>
+        <div style="font-size:11px;color:var(--muted)">${esc(s.component||'')}</div>
+      </div>
+      <div style="margin-left:auto;font-size:10px;color:var(--muted)">${s.durationMs ? s.durationMs+'ms' : ''}</div>`;
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.fsm-item').forEach(e => e.classList.remove('sel'));
+      el.classList.add('sel');
+      // Switch to timeline tab and select step
+      document.querySelectorAll('.tab,.tab-content').forEach(e => e.classList.remove('active'));
+      document.querySelector('[data-tab="timeline"]').classList.add('active');
+      document.getElementById('timeline-tab').classList.add('active');
+      selectStep(idx);
+      setTimeout(() => {
+        const item = document.querySelector(`.tl-item[data-i="${idx}"]`);
+        if (item) item.scrollIntoView({ behavior:'smooth', block:'nearest' });
+      }, 50);
+    });
+    cont.appendChild(el);
+  });
+}
+
+// ── PlanSuccessResponse → AimitraLens converter ──────────────────────────────
+function convertPlanSuccessResponse(input) {
+  const plan     = input.plan || [];
+  const traceId  = (input.planId || '').replace(/-/g, '').slice(0, 32);
+  const timeline = [];
+  const nodeMap  = new Map();
+  const edges    = [];
+  let edgeOrder  = 0, stepNum = 0;
+
+  // ── helpers ──
+  function nid(name) {
+    return (name || '').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+  }
+  function sid() { return Math.random().toString(16).slice(2, 18).padEnd(16, '0'); }
+  function ensureNode(id, type, label) {
+    if (!nodeMap.has(id)) nodeMap.set(id, { id, type, label: label || id });
+  }
+  function edgeOnce(source, target, order, type) {
+    if (!edges.find(e => e.source === source && e.target === target))
+      edges.push({ source, target, order, type });
+  }
+
+  // ── pass 1: build graph ──
+  let lastLlmAgent = null;
+  plan.forEach(s => {
+    if (s.type === 'LLMStep' && s.data?.agent_name) {
+      lastLlmAgent = nid(s.data.agent_name);
+      ensureNode(lastLlmAgent, 'agent', s.data.agent_name);
+    }
+    if (s.type === 'TransitionStep' && s.data) {
+      const f = nid(s.data.from_agent), t2 = nid(s.data.to_agent);
+      ensureNode(f, 'agent', s.data.from_agent);
+      ensureNode(t2, 'agent', s.data.to_agent);
+      edgeOnce(f, t2, ++edgeOrder, s.data.transition_type || 'handoff');
+    }
+    if (s.type === 'FunctionStep' && s.function && lastLlmAgent) {
+      const tid = nid(s.function.name);
+      ensureNode(tid, 'tool', s.function.name);
+      edgeOnce(lastLlmAgent, tid, ++edgeOrder, 'tool_call');
+    }
+  });
+
+  // ── pass 2: build timeline ──
+  let pendingVars = {};
+  let pendingReason = null;
+  let lastSpan = {};      // agentId → spanId of its last LLMStep
+  let activeAgent = null;
+
+  for (let i = 0; i < plan.length; i++) {
+    const s   = plan[i];
+    const dur = (s.endExecutionTime || 0) - (s.startExecutionTime || 0);
+
+    // Accumulate variable diffs (skip internal vars)
+    if (s.type === 'VariableUpdateStep') {
+      (s.data?.variable_updates || []).forEach(u => {
+        if (!u.variable_name.startsWith('AgentScriptInternal_'))
+          pendingVars[u.variable_name] = String(u.variable_new_value ?? '');
+      });
+      continue;
+    }
+
+    // Skip scaffolding steps
+    if (['NodeEntryStateStep','BeforeReasoningIterationStep','EnabledToolsStep'].includes(s.type)) {
+      if (s.type === 'NodeEntryStateStep' && s.data?.agent_name)
+        activeAgent = s.data.agent_name;
+      continue;
+    }
+
+    if (s.type === 'ReasoningStep')  { pendingReason = s; continue; }
+
+    // ── UserInputStep ──
+    if (s.type === 'UserInputStep') {
+      const varDiff = { ...pendingVars, userMessage: s.message };
+      pendingVars = {};
+      timeline.push({
+        step: ++stepNum, spanId: sid(), parentSpanId: '0000000000000000',
+        component: 'User', type: 'USER_INPUT', status: 'Success', durationMs: 0,
+        inspector: { userMessage: s.message },
+        fsmState: { currentState: 'UserInput', variableDiff: varDiff }
+      });
+      continue;
+    }
+
+    // ── LLMStep ──
+    if (s.type === 'LLMStep') {
+      const agentName = s.data?.agent_name || activeAgent || 'Unknown';
+      const agentId   = nid(agentName);
+      const spanId    = sid();
+      lastSpan[agentId] = spanId;
+
+      const msgs   = s.messages_sent || [];
+      const sysParts = msgs.filter(m => m.role === 'system').map(m => m.content);
+      const userMsg  = msgs.find(m => m.role === 'user')?.content || '';
+      const toolMsg  = msgs.find(m => m.role === 'tool')?.content || '';
+
+      const resp    = (s.response_messages || [])[0];
+      const isCall  = resp?.tool_invocation != null;
+      const output  = isCall
+        ? `[Calling: ${resp.tool_invocation.name}]\n${resp.tool_invocation.arguments || '{}'}`
+        : (resp?.content || s.data?.prompt_response || '');
+
+      const varDiff = { ...pendingVars }; pendingVars = {};
+
+      timeline.push({
+        step: ++stepNum, spanId,
+        parentSpanId: lastSpan[agentId] !== spanId ? (lastSpan[agentId] || '0000000000000000') : '0000000000000000',
+        component: agentName, type: 'LLM_CALL', status: 'Success',
+        durationMs: s.data?.execution_latency || dur,
+        inspector: {
+          systemPrompt: sysParts.join('\n\n') || undefined,
+          userMessage:  userMsg || toolMsg || undefined,
+          modelOutput:  output  || undefined,
+          toolName:     isCall  ? resp.tool_invocation.name      : undefined,
+          toolInput:    isCall  ? resp.tool_invocation.arguments : undefined
+        },
+        fsmState: {
+          currentState: isCall ? `Invoke_${resp.tool_invocation.name}` : (s.data?.prompt_name || 'LLMResponse'),
+          variableDiff: varDiff
+        }
+      });
+      continue;
+    }
+
+    // ── FunctionStep ──
+    if (s.type === 'FunctionStep') {
+      const fn      = s.function || {};
+      const parentAgent = (() => {
+        for (let j = i-1; j >= 0; j--)
+          if (plan[j].type === 'LLMStep' && plan[j].data?.agent_name)
+            return nid(plan[j].data.agent_name);
+        return null;
+      })();
+      const parentSpan = parentAgent ? (lastSpan[parentAgent] || '0000000000000000') : '0000000000000000';
+      const varDiff    = { ...pendingVars }; pendingVars = {};
+      pendingReason    = null;
+
+      timeline.push({
+        step: ++stepNum, spanId: sid(), parentSpanId: parentSpan,
+        component: fn.name || 'Tool', type: 'TOOL_EXECUTION',
+        status: fn.output?.success === false ? 'Error' : 'Success',
+        durationMs: s.executionLatency || dur,
+        inspector: {
+          toolName:   fn.name,
+          toolInput:  fn.input  ? JSON.stringify(fn.input,  null, 2) : undefined,
+          toolOutput: fn.output ? JSON.stringify(fn.output, null, 2) : undefined
+        },
+        fsmState: { currentState: 'ToolExecution', variableDiff: varDiff }
+      });
+      continue;
+    }
+
+    // ── TransitionStep ──
+    if (s.type === 'TransitionStep' && s.data) {
+      const from  = s.data.from_agent;
+      const to    = s.data.to_agent;
+      const clean = {};
+      Object.entries(s.data.current_state || {}).forEach(([k, v]) => {
+        if (!k.startsWith('AgentScriptInternal_') && !k.startsWith('__'))
+          clean[k] = typeof v === 'object' ? JSON.stringify(v) : String(v ?? '');
+      });
+      timeline.push({
+        step: ++stepNum, spanId: sid(),
+        parentSpanId: lastSpan[nid(from)] || '0000000000000000',
+        component: from, type: 'HANDOFF', status: 'Success', durationMs: dur,
+        inspector: { modelOutput: `${from}  →  ${to}  (${s.data.transition_type || 'handoff'})` },
+        fsmState: { currentState: `Transition_to_${to}`, variableDiff: clean }
+      });
+      continue;
+    }
+
+    // ── PlannerResponseStep ──
+    if (s.type === 'PlannerResponseStep') {
+      const safety  = s.safetyScore?.safetyScore?.safety_score;
+      const reason  = pendingReason; pendingReason = null;
+      const varDiff = { ...pendingVars }; pendingVars = {};
+      if (s.responseType)         varDiff.responseType     = s.responseType;
+      if (safety != null)         varDiff.safetyScore      = String(safety);
+      if (reason?.category)       varDiff.groundingCategory = reason.category;
+      if (reason?.reason)         varDiff.groundingReason  = reason.reason;
+      timeline.push({
+        step: ++stepNum, spanId: sid(), parentSpanId: '0000000000000000',
+        component: activeAgent || 'Planner', type: 'PLANNER_RESPONSE',
+        status: s.isContentSafe !== false ? 'Success' : 'Error', durationMs: dur,
+        inspector: { modelOutput: s.message },
+        fsmState: { currentState: `PlannerResponse_${s.responseType || 'Inform'}`, variableDiff: varDiff }
+      });
+      continue;
+    }
+  }
+
+  // ── summary ──
+  const times = plan.map(s => s.startExecutionTime).filter(Boolean);
+  const ends  = plan.map(s => s.endExecutionTime).filter(Boolean);
+  const t0    = times.length ? Math.min(...times) : 0;
+  const t1    = ends.length  ? Math.max(...ends)  : 0;
+  const agents = [...new Set(
+    plan.filter(s => s.type === 'LLMStep' && s.data?.agent_name).map(s => s.data.agent_name)
+  )];
+
+  return {
+    traceId,
+    timestamp: t0 ? new Date(t0).toISOString() : new Date().toISOString(),
+    summary: { totalDurationMs: t1 - t0, totalTokens: 0, agentsInvolved: agents },
+    graph:   { nodes: [...nodeMap.values()], edges },
+    timeline
+  };
+}
+
+// ── Utility ───────────────────────────────────────────────────────────────────
+function svgE(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+</script>
+</body>
+</html>

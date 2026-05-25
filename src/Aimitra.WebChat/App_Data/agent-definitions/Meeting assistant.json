@@ -1,0 +1,17 @@
+{
+  "Name": "Meeting assistant",
+  "Active": true,
+  "Description": "meeting assistant to evaluate and answer based on knowledge base documents",
+  "Topics": [
+    {
+      "Name": "Zoom Meeting assistant",
+      "Description": "take zoom meeting notes and identify action items",
+      "KernelFunctions": [
+        "DatabaseTools.RunSql",
+        "OfficePlugin.MeetingActionPoints",
+        "OfficePlugin.MeetingDetails",
+        "KnowledgeBasePlugin.QueryKnowledgeBaseAsync"
+      ]
+    }
+  ]
+}

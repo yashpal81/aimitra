@@ -1,0 +1,410 @@
+@page "/agent-designer"
+@using Aimitra.WebChat.Models
+@using Microsoft.AspNetCore.Components
+@inject Aimitra.WebChat.Services.AgentDefinitionStore DefinitionStore
+@inject Aimitra.WebChat.Services.AgentDefinitionLoader DefinitionLoader
+
+<div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+    <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/50">
+                <div class="mb-6">
+                    <p class="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-700">Aimitra Designer</p>
+                    <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Custom Agent Builder</h1>
+                    <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                        Define a new agent group, organize it into topics, attach kernel functions to each topic, and save the structure as JSON.
+                    </p>
+                    @if (!string.IsNullOrWhiteSpace(editingFilePath))
+                    {
+                        <p class="mt-2 text-sm font-medium text-amber-700">
+                            Editing existing definition: @System.IO.Path.GetFileName(editingFilePath)
+                        </p>
+                    }
+                </div>
+
+        <div class="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+            <section class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <label class="mb-4 block">
+                    <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Agent Group Name</span>
+                    <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                           @bind="agent.Name"
+                           @bind:event="oninput"
+                           placeholder="e.g. Finance Assistant" />
+                </label>
+
+                <label class="mb-4 block">
+                    <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Agent Group Description</span>
+                    <textarea class="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                              rows="4"
+                              @bind="agent.Description"
+                              @bind:event="oninput"
+                              placeholder="Describe what this agent group should do and where its boundaries are."></textarea>
+                </label>
+
+                <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <div>
+                            <p class="text-sm font-semibold text-amber-900">Prompt Plugin Builder</p>
+                            <p class="text-xs leading-5 text-amber-800">
+                                Create a prompt plugin folder like <code>OfficePlugin/MeetingDetails</code> with `skprompt.txt` and `config.json`.
+                            </p>
+                        </div>
+                        <button type="button"
+                                class="rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-500"
+                                @onclick="CreatePromptPlugin">
+                            Create Prompt Plugin
+                        </button>
+                    </div>
+
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <label class="block">
+                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Plugin Name</span>
+                            <input class="w-full rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                                   @bind="promptPluginName"
+                                   @bind:event="oninput"
+                                   placeholder="OfficePlugin" />
+                        </label>
+
+                        <label class="block">
+                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Function Name</span>
+                            <input class="w-full rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                                   @bind="promptFunctionName"
+                                   @bind:event="oninput"
+                                   placeholder="MeetingDetails" />
+                        </label>
+                    </div>
+
+                    <label class="mt-3 block">
+                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Description</span>
+                        <input class="w-full rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                               @bind="promptDescription"
+                               @bind:event="oninput"
+                               placeholder="Extracts meeting details from a user request." />
+                    </label>
+
+                    <label class="mt-3 block">
+                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Prompt Template</span>
+                        <textarea class="w-full resize-none rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                                  rows="8"
+                                  @bind="promptTemplate"
+                                  @bind:event="oninput"
+                                  placeholder="Write the prompt template here."></textarea>
+                    </label>
+                </div>
+
+                <div class="mb-4 flex items-center justify-between">
+                    <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Topics</h2>
+                    <button type="button" class="rounded-xl bg-cyan-600 px-3 py-2 text-xs font-semibold text-white hover:bg-cyan-500"
+                            @onclick="AddTopic">
+                        Add Topic
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    @for (var i = 0; i < agent.Topics.Count; i++)
+                    {
+                        var topicIndex = i;
+                        var topic = agent.Topics[topicIndex];
+                        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <div class="mb-3 flex items-center justify-between gap-3">
+                                <h3 class="text-sm font-semibold text-slate-800">Topic @(topicIndex + 1)</h3>
+                                <button type="button" class="text-xs font-semibold text-rose-600 hover:text-rose-500"
+                                        @onclick="() => RemoveTopic(topicIndex)">
+                                    Remove
+                                </button>
+                            </div>
+
+                            <div class="space-y-3">
+                                <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                                       @bind="topic.Name"
+                                       @bind:event="oninput"
+                                       placeholder="Topic name" />
+
+                                <textarea class="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                                          rows="3"
+                                          @bind="topic.Description"
+                                          @bind:event="oninput"
+                                          placeholder="Topic description"></textarea>
+
+                                <div>
+                                    <div class="mb-2 flex items-center justify-between gap-3">
+                                        <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Kernel Functions</span>
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-xs text-slate-400">@topic.KernelFunctions.Count selected</span>
+                                            <button type="button" class="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-800 hover:bg-cyan-100"
+                                                    @onclick="() => OpenFunctionModal(topicIndex)">
+                                                Add Function
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    @if (topic.KernelFunctions.Count == 0)
+                                    {
+                                        <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                                            No kernel functions selected yet.
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="flex flex-wrap gap-2">
+                                            @for (var functionIndex = 0; functionIndex < topic.KernelFunctions.Count; functionIndex++)
+                                            {
+                                                var functionName = topic.KernelFunctions[functionIndex];
+                                                var removeTopicIndex = topicIndex;
+                                                var removeFunctionIndex = functionIndex;
+                                                <span @key="functionName" class="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-800">
+                                                    <span>@functionName</span>
+                                                    <button type="button"
+                                                            class="rounded-full px-1 text-cyan-700 hover:bg-cyan-100 hover:text-cyan-900"
+                                                            title="Remove function from topic"
+                                                            @onclick="() => RemoveKernelFunction(removeTopicIndex, removeFunctionIndex)">
+                                                        ×
+                                                    </button>
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </section>
+
+            <section class="rounded-2xl border border-slate-200 bg-white p-5">
+                <div class="mb-4 flex items-center justify-between">
+                    <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Preview</h2>
+                    <button type="button" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+                            @onclick="Save">
+                        Save as JSON
+                    </button>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 bg-slate-950 p-4">
+                    <pre class="max-h-[36rem] overflow-auto text-xs leading-6 text-slate-100">@previewJson</pre>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(status))
+                {
+                    <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                        @status
+                    </div>
+                }
+            </section>
+        </div>
+    </div>
+</div>
+
+@if (isFunctionModalOpen && selectedTopic is not null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6">
+        <div class="w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">Add Function</p>
+                    <h3 class="mt-1 text-lg font-semibold text-slate-900">Select kernel functions for topic</h3>
+                </div>
+                <button type="button" class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                        @onclick="CloseFunctionModal">
+                    Close
+                </button>
+            </div>
+
+            <div class="max-h-[70vh] overflow-auto">
+                <table class="min-w-full border-separate border-spacing-0">
+                    <thead class="sticky top-0 bg-slate-50">
+                        <tr>
+                            <th class="w-16 border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Select</th>
+                            <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Name of Kernel function</th>
+                            <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Plugin name as category</th>
+                            <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Type</th>
+                            <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var option in availableKernelFunctions)
+                        {
+                            <tr class="hover:bg-cyan-50/50">
+                                <td class="border-b border-slate-100 px-4 py-4 align-top">
+                                    <input type="checkbox"
+                                           class="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                                           checked="@selectedTopic.KernelFunctions.Contains(option.FullName)"
+                                           @onchange="() => ToggleKernelFunction(option.FullName)" />
+                                </td>
+                                <td class="border-b border-slate-100 px-4 py-4 align-top">
+                                    <div class="text-sm font-medium text-slate-900">@option.DisplayName</div>
+                                    <div class="mt-1 text-xs text-slate-500">@option.FullName</div>
+                                </td>
+                                <td class="border-b border-slate-100 px-4 py-4 align-top">
+                                    <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                                        @option.Group
+                                    </span>
+                                </td>
+                                <td class="border-b border-slate-100 px-4 py-4 align-top">
+                                    <span class="inline-flex rounded-full @(option.FunctionType == "Prompt" ? "bg-amber-100 text-amber-800" : "bg-cyan-100 text-cyan-800") px-2.5 py-1 text-xs font-medium">
+                                        @option.FunctionType
+                                    </span>
+                                </td>
+                                <td class="border-b border-slate-100 px-4 py-4 align-top text-sm leading-6 text-slate-600">
+                                    @option.Description
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex items-center justify-between gap-4 border-t border-slate-200 px-6 py-4">
+                <p class="text-sm text-slate-500">
+                    Checked functions are added directly to the selected topic.
+                </p>
+                <button type="button" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+                        @onclick="CloseFunctionModal">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "file")]
+    public string? EditingFilePath { get; set; }
+
+    private List<KernelFunctionOption> availableKernelFunctions = new();
+    private string editingFilePath = string.Empty;
+    private string promptPluginName = "OfficePlugin";
+    private string promptFunctionName = "MeetingDetails";
+    private string promptDescription = "Extracts meeting details from a user request.";
+    private string promptTemplate = "You are an executive assistant. Schedule a meeting based on the following details:\n\nUser Request: {{$input}}\nCurrent Date/Time: {{$currentDateTime}}\n\nPlease extract:\n1. Meeting Purpose\n2. Attendees\n3. Preferred Date & Time\n\nIf any details are missing, politely ask the user for clarification.\n";
+
+    private AgentDefinition agent = new()
+    {
+        Name = "New Agent Group",
+        Topics = new List<TopicDefinition>
+        {
+            new()
+            {
+                Name = "Default Topic",
+                Description = "Describe the topic and the intended action boundary.",
+                KernelFunctions = new List<string> { "DatabaseTools.RunSql" }
+            }
+        }
+    };
+
+    private string status = string.Empty;
+    private bool isFunctionModalOpen;
+    private int? activeTopicIndex;
+    private TopicDefinition? selectedTopic;
+
+    private string previewJson => System.Text.Json.JsonSerializer.Serialize(agent, new System.Text.Json.JsonSerializerOptions
+    {
+        WriteIndented = true
+    });
+
+    protected override void OnInitialized()
+    {
+        availableKernelFunctions = DefinitionLoader.LoadAvailableKernelFunctions().ToList();
+        if (!string.IsNullOrWhiteSpace(EditingFilePath))
+        {
+            editingFilePath = Uri.UnescapeDataString(EditingFilePath);
+            var existing = DefinitionStore.Load(editingFilePath);
+            if (existing is not null)
+            {
+                agent = existing.Definition;
+                status = $"Loaded existing definition from {System.IO.Path.GetFileName(editingFilePath)}.";
+            }
+        }
+        Console.WriteLine($"Loaded {availableKernelFunctions.Count} available kernel functions for selection in the designer.");
+    Console.WriteLine("Available kernel functions:");
+        foreach (var option in availableKernelFunctions)
+        {
+            Console.WriteLine($"- {option.FullName} (Display: {option.DisplayName}, Group: {option.Group})");
+        }
+    }
+
+    private void AddTopic()
+    {
+        agent.Topics.Add(new TopicDefinition());
+    }
+
+    private void RemoveTopic(int index)
+    {
+        if (index >= 0 && index < agent.Topics.Count)
+        {
+            agent.Topics.RemoveAt(index);
+        }
+    }
+
+    private void OpenFunctionModal(int topicIndex)
+    {
+        if (topicIndex < 0 || topicIndex >= agent.Topics.Count)
+        {
+            return;
+        }
+
+        activeTopicIndex = topicIndex;
+        selectedTopic = agent.Topics[topicIndex];
+        isFunctionModalOpen = true;
+    }
+
+    private void CloseFunctionModal()
+    {
+        isFunctionModalOpen = false;
+        activeTopicIndex = null;
+        selectedTopic = null;
+    }
+
+    private void ToggleKernelFunction(string functionName)
+    {
+        var topic = selectedTopic;
+        if (topic is null)
+        {
+            return;
+        }
+
+        if (topic.KernelFunctions.Contains(functionName))
+        {
+            topic.KernelFunctions.Remove(functionName);
+            return;
+        }
+
+        topic.KernelFunctions.Add(functionName);
+    }
+
+    private void RemoveKernelFunction(int topicIndex, int functionIndex)
+    {
+        if (topicIndex < 0 || topicIndex >= agent.Topics.Count)
+        {
+            return;
+        }
+
+        var topic = agent.Topics[topicIndex];
+        if (functionIndex < 0 || functionIndex >= topic.KernelFunctions.Count)
+        {
+            return;
+        }
+
+        topic.KernelFunctions.RemoveAt(functionIndex);
+    }
+
+    private void Save()
+    {
+        var filePath = string.IsNullOrWhiteSpace(editingFilePath)
+            ? DefinitionStore.Save(agent)
+            : DefinitionStore.Save(editingFilePath, agent);
+
+        editingFilePath = filePath;
+        status = $"Saved JSON to {filePath}";
+    }
+
+    private void CreatePromptPlugin()
+    {
+        var folder = DefinitionStore.SavePromptPlugin(
+            promptPluginName,
+            promptFunctionName,
+            promptTemplate,
+            promptDescription);
+
+        status = $"Created prompt plugin at {folder}";
+    }
+}

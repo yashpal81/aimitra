@@ -1,0 +1,269 @@
+@page "/chat"
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Forms
+@inject Aimitra.WebChat.Services.IDocumentMemoryService DocumentMemory
+@inject IJSRuntime JS
+
+<style>
+    @@keyframes dotPulse {
+        0%, 20% { opacity: .2; transform: translateY(0); }
+        40% { opacity: 1; transform: translateY(-1px); }
+        100% { opacity: .2; transform: translateY(0); }
+    }
+
+    .thinking-dot {
+        display: inline-block;
+        animation: dotPulse 1.2s infinite ease-in-out;
+    }
+
+    .thinking-dot:nth-child(2) {
+        animation-delay: .15s;
+    }
+
+    .thinking-dot:nth-child(3) {
+        animation-delay: .3s;
+    }
+</style>
+
+<div class="min-h-[calc(100vh-2rem)] bg-slate-100 text-slate-900">
+    <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+        <div class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-200/60">
+            <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-500 via-sky-500 to-indigo-500"></div>
+            <div class="grid gap-0 lg:grid-cols-[1.35fr_0.85fr]">
+                <section class="border-b border-slate-200 p-6 lg:border-b-0 lg:border-r">
+                    <div class="mb-6 flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-sm font-medium uppercase tracking-[0.25em] text-cyan-700">Aimitra WebChat</p>
+                            <h3 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Enterprise chat orchestration</h3>
+                            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                                Route messages through topic-aware orchestration, plugin execution, and security-aware responses.
+                            </p>
+                        </div>
+                        <div class="hidden rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-right text-xs text-cyan-900 sm:block">
+                            <div class="font-semibold uppercase tracking-[0.2em]">Status</div>
+                            <div class="mt-1">Connected to AI-mitra</div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50">
+                        <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                            <span class="text-sm font-medium text-slate-700">Conversation</span>
+                            <span class="text-xs text-slate-500">Secure routed session</span>
+                        </div>
+                        <div class="messages max-h-[28rem] space-y-3 overflow-y-auto p-4">
+                            @if (messages.Count == 0)
+                            {
+                                <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
+                                    Start a conversation. Messages will appear here in a structured enterprise layout.
+                                </div>
+                            }
+                            else
+                            {
+                                @foreach (var m in messages)
+                                {
+                                    <div class="flex @(m.User == "Aimitra" ? "justify-start" : "justify-end")">
+                                        <div class="max-w-[80%] rounded-2xl px-4 py-3 shadow-sm @(m.User == "Aimitra" ? "border border-cyan-100 bg-cyan-50 text-slate-900" : "border border-slate-200 bg-white text-slate-900")">
+                                            <div class="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] @(m.User == "Aimitra" ? "text-cyan-700" : "text-slate-500")">
+                                                @m.User
+                                            </div>
+                                            <div class="whitespace-pre-wrap text-sm leading-6">@m.Text</div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            @if (isThinking)
+                            {
+                                <div class="flex justify-start">
+                                    <div class="max-w-[80%] rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-slate-900 shadow-sm">
+                                        <div class="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-700">
+                                            Aimitra
+                                        </div>
+                                        <div class="flex items-center gap-2 text-sm leading-6 text-slate-700">
+                                            <span>Thinking</span>
+                                            <span class="inline-flex gap-1">
+                                                <span class="thinking-dot">.</span>
+                                                <span class="thinking-dot">.</span>
+                                                <span class="thinking-dot">.</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </section>
+
+                <aside class="space-y-6 bg-slate-50 p-6">
+                    <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Session</p>
+                        <div class="mt-3 grid gap-3">
+                            <label class="block">
+                                <span class="mb-2 block text-xs font-medium text-slate-500">User</span>
+                                <input placeholder="Your name" @bind="user" @bind:event="oninput"
+                                       class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20" />
+                            </label>
+
+                            <label class="block">
+                                <span class="mb-2 block text-xs font-medium text-slate-500">Message</span>
+                                <textarea placeholder="Type a message" @bind="currentMessage" @bind:event="oninput"
+                                          rows="4"
+                                          class="w-full resize-none rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                                          @onkeyup="OnMessageKeyUp"></textarea>
+                            </label>
+
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                                    <span class="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-700">Session KB: @collectionName</span>
+                                    <span class="rounded-full bg-cyan-50 px-2 py-1 font-semibold text-cyan-700">
+                                        @if (selectedFile is not null)
+                                        {
+                                            @($"Attached: {selectedFile.Name}")
+                                        }
+                                        else
+                                        {
+                                            @("No file attached")
+                                        }
+                                    </span>
+                                </div>
+                                <div class="mt-3 flex flex-col gap-2">
+                                    <label class="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-900">
+                                        <span class="rounded-lg border border-slate-200 bg-white px-2 py-1">Attach file</span>
+                                        <InputFile OnChange="OnFileSelected" class="hidden" />
+                                    </label>
+                                    @if (!string.IsNullOrWhiteSpace(status))
+                                    {
+                                        <div class="text-[11px] text-slate-500">@status</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <button @onclick="Send"
+                                    disabled="@isThinking"
+                                    class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-600 to-sky-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-200 transition hover:from-cyan-500 hover:to-sky-500 disabled:cursor-not-allowed disabled:opacity-60">
+                                Send Message
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-5">
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Notes</p>
+                        <ul class="mt-3 space-y-3 text-sm text-slate-600">
+                            <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-cyan-400"></span>Messages route through SignalR hub and topic orchestration.</li>
+                            <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-cyan-400"></span>PII masking and persona guardrails stay active in backend execution.</li>
+                            <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-cyan-400"></span>Tailwind keeps the surface responsive across desktop and mobile.</li>
+                        </ul>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+	private List<MessageEntry> messages = new();
+	private string user = "User";
+	private string currentMessage = string.Empty;
+    private string collectionName = string.Empty;
+    private string status = string.Empty;
+	private bool isThinking;
+	private DotNetObjectReference<Chat>? objRef;
+    private IBrowserFile? selectedFile;
+
+    protected override void OnInitialized()
+    {
+        collectionName = $"chat-{Guid.NewGuid():N}";
+        DocumentMemory.SetLastCollection(collectionName);
+    }
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			objRef = DotNetObjectReference.Create(this);
+			await JS.InvokeVoidAsync("aimitraChat.start", objRef);
+		}
+	}
+
+	[JSInvokable]
+	public Task ReceiveMessage(string user, string message)
+	{
+		messages.Add(new MessageEntry { User = user, Text = message });
+		if (user == "Aimitra")
+		{
+			isThinking = false;
+		}
+		StateHasChanged();
+		return Task.CompletedTask;
+	}
+
+	private async Task Send()
+	{
+		if (!string.IsNullOrWhiteSpace(currentMessage))
+		{
+			isThinking = true;
+			StateHasChanged();
+
+            var textToSend = currentMessage;
+            var matches = await DocumentMemory.AskAsync(currentMessage, collectionName, topK: 3);
+            if (matches.Count > 0)
+            {
+                var context = string.Join("\n\n", matches.Select(m => $"[{m.Source}] {m.Snippet}"));
+                textToSend = $"Use the following session knowledge base context to answer.\n\nContext:\n{context}\n\nUser question: {currentMessage}";
+            }
+
+			await JS.InvokeVoidAsync("aimitraChat.sendMessage", user, textToSend);
+			currentMessage = string.Empty;
+			StateHasChanged();
+		}
+	}
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        if (selectedFile is null)
+        {
+            return;
+        }
+
+        var tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}_{selectedFile.Name}");
+        await using (var stream = selectedFile.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024))
+        await using (var fs = File.Create(tempPath))
+        {
+            await stream.CopyToAsync(fs);
+        }
+
+        try
+        {
+            var collection = await DocumentMemory.ImportDocumentAsync(tempPath, collectionName);
+            collectionName = collection;
+            DocumentMemory.SetLastCollection(collectionName);
+            status = $"Attached '{selectedFile.Name}' to session KB '{collectionName}'.";
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
+        }
+    }
+
+	private void OnMessageKeyUp(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+	{
+		if (e.Key == "Enter" && !e.ShiftKey)
+		{
+			Send();
+		}
+	}
+
+	private class MessageEntry
+	{
+		public string User { get; set; } = string.Empty;
+		public string Text { get; set; } = string.Empty;
+	}
+
+	public void Dispose()
+	{
+		objRef?.Dispose();
+	}
+}

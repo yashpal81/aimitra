@@ -39,55 +39,12 @@
                               placeholder="Describe what this agent group should do and where its boundaries are."></textarea>
                 </label>
 
-                <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
-                    <div class="mb-3 flex items-center justify-between gap-3">
-                        <div>
-                            <p class="text-sm font-semibold text-amber-900">Prompt Plugin Builder</p>
-                            <p class="text-xs leading-5 text-amber-800">
-                                Create a prompt plugin folder like <code>OfficePlugin/MeetingDetails</code> with `skprompt.txt` and `config.json`.
-                            </p>
-                        </div>
-                        <button type="button"
-                                class="rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-500"
-                                @onclick="CreatePromptPlugin">
-                            Create Prompt Plugin
-                        </button>
-                    </div>
-
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <label class="block">
-                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Plugin Name</span>
-                            <input class="w-full rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                                   @bind="promptPluginName"
-                                   @bind:event="oninput"
-                                   placeholder="OfficePlugin" />
-                        </label>
-
-                        <label class="block">
-                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Function Name</span>
-                            <input class="w-full rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                                   @bind="promptFunctionName"
-                                   @bind:event="oninput"
-                                   placeholder="MeetingDetails" />
-                        </label>
-                    </div>
-
-                    <label class="mt-3 block">
-                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Description</span>
-                        <input class="w-full rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                               @bind="promptDescription"
-                               @bind:event="oninput"
-                               placeholder="Extracts meeting details from a user request." />
-                    </label>
-
-                    <label class="mt-3 block">
-                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Prompt Template</span>
-                        <textarea class="w-full resize-none rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                                  rows="8"
-                                  @bind="promptTemplate"
-                                  @bind:event="oninput"
-                                  placeholder="Write the prompt template here."></textarea>
-                    </label>
+                <div class="mb-4 flex items-center justify-between">
+                    <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Prompt Plugin</h2>
+                    <button type="button" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+                            @onclick="OpenPromptPluginModal">
+                        Create Prompt Plugin
+                    </button>
                 </div>
 
                 <div class="mb-4 flex items-center justify-between">
@@ -193,6 +150,73 @@
     </div>
 </div>
 
+@if (isPromptPluginModalOpen)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6">
+        <div class="w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Prompt Plugin Builder</p>
+                    <h3 class="mt-1 text-lg font-semibold text-slate-900">Create a new prompt plugin</h3>
+                </div>
+                <button type="button" class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                        @onclick="ClosePromptPluginModal">
+                    Close
+                </button>
+            </div>
+
+            <div class="overflow-auto px-6 py-5 space-y-4">
+                <p class="text-xs leading-5 text-slate-500">
+                    Creates a prompt plugin folder like <code class="rounded bg-slate-100 px-1 py-0.5">OfficePlugin/MeetingDetails</code> with <code class="rounded bg-slate-100 px-1 py-0.5">skprompt.txt</code> and <code class="rounded bg-slate-100 px-1 py-0.5">config.json</code>.
+                </p>
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Plugin Name</span>
+                        <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                               @bind="promptPluginName"
+                               @bind:event="oninput"
+                               placeholder="OfficePlugin" />
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Function Name</span>
+                        <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                               @bind="promptFunctionName"
+                               @bind:event="oninput"
+                               placeholder="MeetingDetails" />
+                    </label>
+                </div>
+
+                <label class="block">
+                    <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Description</span>
+                    <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                           @bind="promptDescription"
+                           @bind:event="oninput"
+                           placeholder="Extracts meeting details from a user request." />
+                </label>
+
+                <label class="block">
+                    <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Prompt Template</span>
+                    <textarea class="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                              rows="10"
+                              @bind="promptTemplate"
+                              @bind:event="oninput"
+                              placeholder="Write the prompt template here."></textarea>
+                </label>
+            </div>
+
+            <div class="flex items-center justify-between gap-4 border-t border-slate-200 px-6 py-4">
+                <p class="text-sm text-slate-500">Files will be saved inside the Plugins folder.</p>
+                <button type="button" class="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500"
+                        @onclick="CreatePromptPlugin">
+                    Save Plugin
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @if (isFunctionModalOpen && selectedTopic is not null)
 {
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6">
@@ -293,6 +317,7 @@
 
     private string status = string.Empty;
     private bool isFunctionModalOpen;
+    private bool isPromptPluginModalOpen;
     private int? activeTopicIndex;
     private TopicDefinition? selectedTopic;
 
@@ -397,6 +422,16 @@
         status = $"Saved JSON to {filePath}";
     }
 
+    private void OpenPromptPluginModal()
+    {
+        isPromptPluginModalOpen = true;
+    }
+
+    private void ClosePromptPluginModal()
+    {
+        isPromptPluginModalOpen = false;
+    }
+
     private void CreatePromptPlugin()
     {
         var folder = DefinitionStore.SavePromptPlugin(
@@ -406,5 +441,6 @@
             promptDescription);
 
         status = $"Created prompt plugin at {folder}";
+        isPromptPluginModalOpen = false;
     }
 }

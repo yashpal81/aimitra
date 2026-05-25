@@ -20,6 +20,7 @@ var openAIUrl = Environment.GetEnvironmentVariable("OPENAI_URL") ?? string.Empty
 var openAIModel = Environment.GetEnvironmentVariable("OPENAI_MODEL") ?? string.Empty;
 var presidioEndpoint = Environment.GetEnvironmentVariable("PRESIDIO_ENDPOINT") ?? string.Empty;
 var routeAgent = Environment.GetEnvironmentVariable("ROUTE_AGENT") ?? "topic_selector";
+var geminiApiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? string.Empty;
 
 builder.WebHost.UseUrls("http://0.0.0.0:5000");
 builder.Services.AddRazorPages();
@@ -27,7 +28,19 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<AgentDefinitionStore>();
 builder.Services.AddSingleton<AgentDefinitionLoader>();
-builder.Services.AddSingleton<IDocumentMemoryService, DocumentMemoryService>();
+
+// ── Document memory: Gemini embeddings + SQLite vector store ─────────────────
+var knowledgeDbPath = Path.Combine(AppContext.BaseDirectory, "App_Data", "knowledge-base", "vectors.db");
+Directory.CreateDirectory(Path.GetDirectoryName(knowledgeDbPath)!);
+
+builder.Services.AddHttpClient<GeminiEmbeddingGenerator>();
+builder.Services.AddSingleton(sp =>
+    new GeminiEmbeddingGenerator(
+        sp.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(GeminiEmbeddingGenerator)),
+        geminiApiKey));
+builder.Services.AddSingleton(new SqliteVecDocumentStore(knowledgeDbPath));
+builder.Services.AddSingleton<IDocumentMemoryService, KernelMemoryDocumentService>();
+// ─────────────────────────────────────────────────────────────────────────────
 
 
 // Register SemanticKernelOrchestrator and TopicOrchestrator as singletons

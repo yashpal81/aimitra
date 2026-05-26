@@ -1,10 +1,12 @@
 window.aimitraChat = (function () {
     let connection = null;
     let dotNetRef = null;
+    let sessionCollection = null;
 
     return {
-        start: function (dotNetObject) {
+        start: function (dotNetObject, collection) {
             dotNetRef = dotNetObject;
+            sessionCollection = collection || null;
             connection = new signalR.HubConnectionBuilder()
                 .withUrl('/chathub')
                 .withAutomaticReconnect()
@@ -16,12 +18,21 @@ window.aimitraChat = (function () {
                 }
             });
 
-            connection.start().catch(function (err) {
-                console.error(err.toString());
-            });
+            connection.start()
+                .then(function () {
+                    if (sessionCollection) {
+                        return connection.invoke('SetSessionCollection', sessionCollection);
+                    }
+                })
+                .catch(function (err) {
+                    console.error(err.toString());
+                });
         },
         sendMessage: function (user, message) {
             if (connection) {
+                if (dotNetRef) {
+                    dotNetRef.invokeMethodAsync('ReceiveMessage', user, message);
+                }
                 connection.invoke('SendMessage', user, message).catch(function (err) {
                     console.error(err.toString());
                 });

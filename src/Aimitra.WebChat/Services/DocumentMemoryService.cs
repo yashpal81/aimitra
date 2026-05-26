@@ -14,6 +14,7 @@ namespace Aimitra.WebChat.Services
         string FileName,
         string Collection,
         string StoredPath,
+        string SearchTextPath,
         string ContentType,
         DateTimeOffset ImportedAtUtc,
         DateTimeOffset UpdatedAtUtc);
@@ -61,6 +62,12 @@ namespace Aimitra.WebChat.Services
             var storedFileName = $"{Guid.NewGuid():N}{Path.GetExtension(filePath)}";
             var storedPath = Path.Combine(GetCollectionFolder(collectionName), storedFileName);
             File.Copy(filePath, storedPath, overwrite: true);
+            var searchTextPath = Path.ChangeExtension(storedPath, ".txt");
+            var extractedText = ExtractSearchText(filePath);
+            if (!string.IsNullOrWhiteSpace(extractedText))
+            {
+                File.WriteAllText(searchTextPath, extractedText);
+            }
 
             var entry = new DocumentMemoryEntry(
                 Id: Path.GetFileNameWithoutExtension(storedFileName),
@@ -68,6 +75,7 @@ namespace Aimitra.WebChat.Services
                 FileName: Path.GetFileName(filePath),
                 Collection: collectionName,
                 StoredPath: storedPath,
+                SearchTextPath: searchTextPath,
                 ContentType: GetContentType(filePath),
                 ImportedAtUtc: DateTimeOffset.UtcNow,
                 UpdatedAtUtc: DateTimeOffset.UtcNow);
@@ -106,13 +114,18 @@ namespace Aimitra.WebChat.Services
 
             foreach (var entry in entries)
             {
-                var text = TryReadText(entry.StoredPath);
+                var text = TryReadText(entry.SearchTextPath);
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    text = TryReadText(entry.StoredPath);
+                }
                 if (string.IsNullOrWhiteSpace(text))
                 {
                     continue;
                 }
 
-                var bestSnippet = BuildBestSnippet(text, questionTokens, out var score);
+                var metadataText = $"{entry.Title} {entry.FileName}";
+                var bestSnippet = BuildBestSnippet($"{metadataText}\n\n{text}", questionTokens, out var score);
                 if (score <= 0)
                 {
                     continue;
@@ -164,6 +177,11 @@ namespace Aimitra.WebChat.Services
                 File.Delete(removed.StoredPath);
             }
 
+            if (!string.IsNullOrWhiteSpace(removed.SearchTextPath) && File.Exists(removed.SearchTextPath))
+            {
+                File.Delete(removed.SearchTextPath);
+            }
+
             entries.RemoveAll(x => string.Equals(x.Id, documentId, StringComparison.OrdinalIgnoreCase));
             SaveEntries(collectionName, entries);
             return Task.CompletedTask;
@@ -182,6 +200,15 @@ namespace Aimitra.WebChat.Services
             if (entry is null)
             {
                 return Task.CompletedTask;
+            }
+
+            if (File.Exists(entry.StoredPath))
+            {
+                var extractedText = ExtractSearchText(entry.StoredPath);
+                if (!string.IsNullOrWhiteSpace(extractedText) && !string.IsNullOrWhiteSpace(entry.SearchTextPath))
+                {
+                    File.WriteAllText(entry.SearchTextPath, extractedText);
+                }
             }
 
             var updated = entry with { UpdatedAtUtc = DateTimeOffset.UtcNow };
@@ -271,7 +298,8 @@ namespace Aimitra.WebChat.Services
 
             try
             {
-                return JsonSerializer.Deserialize<List<DocumentMemoryEntry>>(File.ReadAllText(path), _jsonOptions) ?? new List<DocumentMemoryEntry>();
+                return JsonSerializer.Deserialize<List<DocumentMemoryEntry>>(File.ReadAllText(path), _jsonOptions)
+                       ?? new List<DocumentMemoryEntry>();
             }
             catch
             {
@@ -314,6 +342,17 @@ namespace Aimitra.WebChat.Services
             {
                 return string.Empty;
             }
+        }
+
+        private static string ExtractSearchText(string path)
+        {
+            var ext = Path.GetExtension(path).ToLowerInvariant();
+            if (ext is ".txt" or ".md" or ".html" or ".htm" or ".json" or ".xml" or ".csv")
+            {
+                return TryReadText(path);
+            }
+
+            return string.Empty;
         }
 
         private static HashSet<string> Tokenize(string text)
@@ -361,7 +400,16 @@ namespace Aimitra.WebChat.Services
             }
 
             var overlap = words.Intersect(questionTokens, StringComparer.OrdinalIgnoreCase).Count();
-            return (double)overlap / Math.Max(1, questionTokens.Count);
+            var titleBoost = 0.0;
+            foreach (var token in questionTokens)
+            {
+                if (text.Contains(token, StringComparison.OrdinalIgnoreCase))
+                {
+                    titleBoost += 0.05;
+                }
+            }
+
+            return (double)overlap / Math.Max(1, questionTokens.Count) + titleBoost;
         }
     }
 }

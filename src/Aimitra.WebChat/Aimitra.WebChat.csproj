@@ -10,6 +10,7 @@
     <ProjectReference Include="..\Aimitra.SemanticRouteService\Aimitra.SemanticRouteService.csproj" />
     <ProjectReference Include="..\Aimitra.SamplePlugins\Aimitra.SamplePlugins.csproj" />
     <PackageReference Include="Microsoft.KernelMemory.Core" Version="0.35.240412.2" />
+    <PackageReference Include="Microsoft.KernelMemory.AI.OpenAI" Version="0.35.240412.2" />
     <PackageReference Include="Microsoft.Data.Sqlite"       Version="8.0.0" />
   </ItemGroup>
 </Project>

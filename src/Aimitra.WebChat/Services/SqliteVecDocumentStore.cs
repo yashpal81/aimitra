@@ -50,7 +50,7 @@ public sealed class SqliteVecDocumentStore : IDisposable
     private void InitSchema()
     {
         using var conn = Open();
-        Execute(conn, $"""
+        Execute(conn, string.Format(@"
             CREATE TABLE IF NOT EXISTS documents (
                 id           TEXT PRIMARY KEY,
                 title        TEXT NOT NULL,
@@ -77,18 +77,18 @@ public sealed class SqliteVecDocumentStore : IDisposable
                 key   TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             );
-            """);
+            "));
 
         /* ── sqlite-vec alternative ──────────────────────────────────────────
         // Uncomment when vec0 extension is available:
         conn.EnableExtensions(true);
         conn.LoadExtension("vec0");   // ensure vec0 binary is in the output folder
-        Execute(conn, $"""
+        Execute(conn, string.Format(@"
             CREATE VIRTUAL TABLE IF NOT EXISTS chunk_vectors USING vec0(
                 chunk_id  TEXT PRIMARY KEY,
-                embedding FLOAT[{_dimensions}]
+                embedding FLOAT[{0}]
             );
-        """);
+        ", _dimensions));
         ─────────────────────────────────────────────────────────────────────── */
     }
 
@@ -100,14 +100,14 @@ public sealed class SqliteVecDocumentStore : IDisposable
     {
         using var conn = Open();
         using var cmd  = conn.CreateCommand();
-        cmd.CommandText = """
+        cmd.CommandText = @"
             INSERT INTO documents (id, title, file_name, collection, stored_path, content_type, imported_at, updated_at)
             VALUES (@id, @title, @fileName, @collection, @storedPath, @contentType, @importedAt, @updatedAt)
             ON CONFLICT(id) DO UPDATE SET
                 title       = excluded.title,
                 file_name   = excluded.file_name,
                 updated_at  = excluded.updated_at;
-            """;
+            ";
         cmd.Parameters.AddWithValue("@id",          entry.Id);
         cmd.Parameters.AddWithValue("@title",        entry.Title);
         cmd.Parameters.AddWithValue("@fileName",     entry.FileName);
@@ -133,12 +133,12 @@ public sealed class SqliteVecDocumentStore : IDisposable
     {
         using var conn = Open();
         using var cmd  = conn.CreateCommand();
-        cmd.CommandText = """
+        cmd.CommandText = @"
             SELECT id, title, file_name, collection, stored_path, content_type, imported_at, updated_at
             FROM   documents
             WHERE  collection = @collection
             ORDER  BY updated_at DESC;
-            """;
+            ";
         cmd.Parameters.AddWithValue("@collection", collection);
         var result = new List<DocumentMemoryEntry>();
         using var reader = cmd.ExecuteReader();
@@ -151,10 +151,10 @@ public sealed class SqliteVecDocumentStore : IDisposable
     {
         using var conn = Open();
         using var cmd  = conn.CreateCommand();
-        cmd.CommandText = """
+        cmd.CommandText = @"
             SELECT id, title, file_name, collection, stored_path, content_type, imported_at, updated_at
             FROM   documents WHERE id = @id;
-            """;
+            ";
         cmd.Parameters.AddWithValue("@id", documentId);
         using var reader = cmd.ExecuteReader();
         return reader.Read() ? ReadEntry(reader) : null;
@@ -169,13 +169,13 @@ public sealed class SqliteVecDocumentStore : IDisposable
         var embeddingJson = JsonSerializer.Serialize(embedding);
         using var conn    = Open();
         using var cmd     = conn.CreateCommand();
-        cmd.CommandText = """
+        cmd.CommandText = @"
             INSERT INTO chunks (id, document_id, collection, content, embedding)
             VALUES (@id, @docId, @collection, @content, @embedding)
             ON CONFLICT(id) DO UPDATE SET
                 content   = excluded.content,
                 embedding = excluded.embedding;
-            """;
+            ";
         cmd.Parameters.AddWithValue("@id",         chunkId);
         cmd.Parameters.AddWithValue("@docId",       documentId);
         cmd.Parameters.AddWithValue("@collection",  collection);
@@ -185,11 +185,11 @@ public sealed class SqliteVecDocumentStore : IDisposable
 
         /* ── sqlite-vec alternative ──────────────────────────────────────────
         using var vecCmd = conn.CreateCommand();
-        vecCmd.CommandText = """
+        vecCmd.CommandText = @"
             INSERT INTO chunk_vectors (chunk_id, embedding)
             VALUES (@chunkId, @embedding)
             ON CONFLICT(chunk_id) DO UPDATE SET embedding = excluded.embedding;
-        """;
+        ";
         vecCmd.Parameters.AddWithValue("@chunkId", chunkId);
         vecCmd.Parameters.Add(new SqliteParameter("@embedding", SqliteType.Blob)
             { Value = FloatsToBlob(embedding) });
@@ -219,13 +219,13 @@ public sealed class SqliteVecDocumentStore : IDisposable
         // ── Option A (current): load embeddings and rank in C# ───────────────
         using var conn = Open();
         using var cmd  = conn.CreateCommand();
-        cmd.CommandText = """
+        cmd.CommandText = @"
             SELECT c.id, c.document_id, c.content, c.embedding,
                    d.title, d.file_name
             FROM   chunks    c
             JOIN   documents d ON d.id = c.document_id
             WHERE  c.collection = @collection;
-            """;
+            ";
         cmd.Parameters.AddWithValue("@collection", collection);
 
         var candidates = new List<(string chunkId, string docId, string content, float[] vec, string title, string fileName)>();
@@ -288,10 +288,10 @@ public sealed class SqliteVecDocumentStore : IDisposable
     {
         using var conn = Open();
         using var cmd  = conn.CreateCommand();
-        cmd.CommandText = """
+        cmd.CommandText = @"
             INSERT INTO km_state (key, value) VALUES (@key, @value)
             ON CONFLICT(key) DO UPDATE SET value = excluded.value;
-            """;
+            ";
         cmd.Parameters.AddWithValue("@key",   key);
         cmd.Parameters.AddWithValue("@value", value);
         cmd.ExecuteNonQuery();
@@ -321,6 +321,7 @@ public sealed class SqliteVecDocumentStore : IDisposable
             FileName:     r.GetString(2),
             Collection:   r.GetString(3),
             StoredPath:   r.GetString(4),
+            SearchTextPath: string.Empty,
             ContentType:  r.GetString(5),
             ImportedAtUtc: DateTimeOffset.Parse(r.GetString(6)),
             UpdatedAtUtc:  DateTimeOffset.Parse(r.GetString(7)));

@@ -145,7 +145,7 @@
         if (firstRender)
         {
             objRef = DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("aimitraChat.start", objRef);
+            await JS.InvokeVoidAsync("aimitraChat.start", objRef, collectionName);
         }
         
         // Auto scroll helper execution to keep latest message visible inside iframe viewports
@@ -172,15 +172,6 @@
             StateHasChanged();
             
             var textToSend = currentMessage;
-            if (!string.IsNullOrWhiteSpace(collectionName))
-            {
-                var matches = await DocumentMemory.AskAsync(currentMessage, collectionName, topK: 3);
-                if (matches.Count > 0)
-                {
-                    var context = string.Join("\n\n", matches.Select(m => $"[{m.Source}] {m.Snippet}"));
-                    textToSend = $"Use the following session knowledge base context to answer.\n\nContext:\n{context}\n\nUser question: {currentMessage}";
-                }
-            }
             currentMessage = string.Empty;
             
             await JS.InvokeVoidAsync("aimitraChat.sendMessage", user, textToSend);

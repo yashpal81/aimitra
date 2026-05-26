@@ -18,7 +18,7 @@ public class PiiMaskingEngine : IPromptRenderFilter, IFunctionInvocationFilter, 
     
     private readonly MaskingCore _maskingCore;
     // Simulated delay of 30 seconds to run under LLM time constraints and observe masking/unmasking in action
-    private readonly int waitingTime = 30000;
+    private readonly int waitingTime = 35000;
     // // Core regex patterns to detect raw data coming from your DB tools
     // private static readonly Regex EmailRegex = new(@"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", RegexOptions.Compiled);
     // private static readonly Regex SsnRegex = new(@"\b\d{3}-\d{2}-\d{4}\b", RegexOptions.Compiled);

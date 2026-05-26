@@ -180,7 +180,7 @@
 		if (firstRender)
 		{
 			objRef = DotNetObjectReference.Create(this);
-			await JS.InvokeVoidAsync("aimitraChat.start", objRef);
+			await JS.InvokeVoidAsync("aimitraChat.start", objRef, collectionName);
 		}
 	}
 
@@ -203,15 +203,7 @@
 			isThinking = true;
 			StateHasChanged();
 
-            var textToSend = currentMessage;
-            var matches = await DocumentMemory.AskAsync(currentMessage, collectionName, topK: 3);
-            if (matches.Count > 0)
-            {
-                var context = string.Join("\n\n", matches.Select(m => $"[{m.Source}] {m.Snippet}"));
-                textToSend = $"Use the following session knowledge base context to answer.\n\nContext:\n{context}\n\nUser question: {currentMessage}";
-            }
-
-			await JS.InvokeVoidAsync("aimitraChat.sendMessage", user, textToSend);
+			await JS.InvokeVoidAsync("aimitraChat.sendMessage", user, currentMessage);
 			currentMessage = string.Empty;
 			StateHasChanged();
 		}

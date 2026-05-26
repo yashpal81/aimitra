@@ -45,6 +45,7 @@ namespace Aimitra.ConsoleApp
                 Console.WriteLine("OPENAI_URL environment variable is required.");
                 return;
             }            
+            openAIURL = NormalizeOpenAiCompatibleEndpoint(openAIURL).ToString();
             var openAIModel = Environment.GetEnvironmentVariable("OPENAI_MODEL");
             if (string.IsNullOrWhiteSpace(openAIModel))
             {
@@ -279,6 +280,28 @@ namespace Aimitra.ConsoleApp
 
             // In production, this would vectorize the question and compare against route embeddings
             return "Fallback_Generic_Agent";
+        }
+
+        private static Uri NormalizeOpenAiCompatibleEndpoint(string endpoint)
+        {
+            var trimmed = endpoint.Trim().TrimEnd('/');
+            var uri = new Uri(trimmed, UriKind.Absolute);
+
+            if (uri.Host.Contains("openrouter.ai", StringComparison.OrdinalIgnoreCase))
+            {
+                if (uri.AbsolutePath.EndsWith("/chat/completions", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(uri.AbsolutePath, "/v1", StringComparison.OrdinalIgnoreCase) ||
+                    string.IsNullOrWhiteSpace(uri.AbsolutePath) ||
+                    uri.AbsolutePath == "/")
+                {
+                    return new Uri($"{uri.Scheme}://{uri.Host}/api/v1");
+                }
+            }
+
+            if (trimmed.EndsWith("/chat/completions", StringComparison.OrdinalIgnoreCase))
+                trimmed = trimmed[..^"/chat/completions".Length];
+
+            return new Uri(trimmed, UriKind.Absolute);
         }
 
     }

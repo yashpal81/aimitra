@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Net;
 using System.Text.Json.Serialization;
 
 namespace Aimitra.WebChat.Services;
@@ -16,7 +17,7 @@ public sealed class GeminiEmbeddingGenerator
     /// <summary>Number of float32 dimensions returned by the configured model.</summary>
     public int Dimensions => 768;
 
-    public GeminiEmbeddingGenerator(HttpClient httpClient, string apiKey, string model = "text-embedding-004")
+    public GeminiEmbeddingGenerator(HttpClient httpClient, string apiKey, string model = "gemini-embedding-001")
     {
         if (string.IsNullOrWhiteSpace(apiKey))
             throw new ArgumentException("Gemini API key is required.", nameof(apiKey));
@@ -42,18 +43,40 @@ public sealed class GeminiEmbeddingGenerator
             content = new { parts = new[] { new { text } } }
         };
 
-        using var response = await _httpClient
-            .PostAsJsonAsync(url, requestBody, cancellationToken)
-            .ConfigureAwait(false);
+        const int maxAttempts = 3;
+        var delayMs = 6000;
 
-        response.EnsureSuccessStatusCode();
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            using var response = await _httpClient
+                .PostAsJsonAsync(url, requestBody, cancellationToken)
+                .ConfigureAwait(false);
 
-        var result = await response.Content
-            .ReadFromJsonAsync<GeminiEmbedResponse>(cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content
+                    .ReadFromJsonAsync<GeminiEmbedResponse>(cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
 
-        return result?.Embedding?.Values
-               ?? throw new InvalidOperationException("Gemini returned an empty embedding.");
+                return result?.Embedding?.Values
+                       ?? throw new InvalidOperationException("Gemini returned an empty embedding.");
+            }
+
+            if (response.StatusCode != HttpStatusCode.TooManyRequests || attempt == maxAttempts)
+            {
+                var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                throw new HttpRequestException(
+                    $"Gemini embedding request failed with {(int)response.StatusCode} ({response.ReasonPhrase}). Response: {body}",
+                    null,
+                    response.StatusCode);
+            }
+
+            var retryDelay = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromMilliseconds(delayMs);
+            await Task.Delay(retryDelay, cancellationToken).ConfigureAwait(false);
+            delayMs *= 2;
+        }
+
+        throw new InvalidOperationException("Gemini embedding request failed after retries.");
     }
 
     // ---------- JSON shape returned by Gemini embedContent endpoint ----------

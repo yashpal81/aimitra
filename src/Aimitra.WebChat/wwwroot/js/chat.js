@@ -1,10 +1,31 @@
 window.aimitraChat = (function () {
     let connection = null;
     let dotNetRef = null;
+    let sessionCollection = null;
+    const storageKey = 'aimitra.session.collection';
+
+    function getOrCreateSessionCollection(prefix) {
+        const keyPrefix = prefix || 'chat';
+        let value = sessionStorage.getItem(storageKey);
+        if (!value) {
+            value = `${keyPrefix}-${crypto.randomUUID()}`;
+            sessionStorage.setItem(storageKey, value);
+        }
+        return value;
+    }
 
     return {
-        start: function (dotNetObject) {
+        getOrCreateSessionCollection: function (prefix) {
+            return getOrCreateSessionCollection(prefix);
+        },
+        start: function (dotNetObject, collection) {
             dotNetRef = dotNetObject;
+            sessionCollection = collection || getOrCreateSessionCollection('chat');
+
+            if (connection) {
+                return connection.invoke('SetSessionCollection', sessionCollection);
+            }
+
             connection = new signalR.HubConnectionBuilder()
                 .withUrl('/chathub')
                 .withAutomaticReconnect()
@@ -16,12 +37,28 @@ window.aimitraChat = (function () {
                 }
             });
 
-            connection.start().catch(function (err) {
-                console.error(err.toString());
-            });
+            connection.start()
+                .then(function () {
+                    if (sessionCollection) {
+                        return connection.invoke('SetSessionCollection', sessionCollection);
+                    }
+                })
+                .catch(function (err) {
+                    console.error(err.toString());
+                });
+        },
+        stop: function () {
+            if (connection) {
+                const current = connection;
+                connection = null;
+                return current.stop();
+            }
         },
         sendMessage: function (user, message) {
             if (connection) {
+                if (dotNetRef) {
+                    dotNetRef.invokeMethodAsync('ReceiveMessage', user, message);
+                }
                 connection.invoke('SendMessage', user, message).catch(function (err) {
                     console.error(err.toString());
                 });

@@ -2,6 +2,7 @@
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components.Forms
 @inject Aimitra.WebChat.Services.IDocumentMemoryService DocumentMemory
+@inject Aimitra.WebChat.Services.AgentDefinitionLoader AgentDefinitions
 @inject IJSRuntime JS
 
 <style>
@@ -54,7 +55,7 @@
                             @if (messages.Count == 0)
                             {
                                 <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
-                                    Start a conversation. Messages will appear here in a structured enterprise layout.
+                                    @welcomeMessage
                                 </div>
                             }
                             else
@@ -103,14 +104,6 @@
                                        class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20" />
                             </label>
 
-                            <label class="block">
-                                <span class="mb-2 block text-xs font-medium text-slate-500">Message</span>
-                                <textarea placeholder="Type a message" @bind="currentMessage" @bind:event="oninput"
-                                          rows="4"
-                                          class="w-full resize-none rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                                          @onkeyup="OnMessageKeyUp"></textarea>
-                            </label>
-
                             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
                                 <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
                                     <span class="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-700">Session KB: @collectionName</span>
@@ -137,11 +130,33 @@
                                 </div>
                             </div>
 
-                            <button @onclick="Send"
-                                    disabled="@isThinking"
-                                    class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-600 to-sky-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-200 transition hover:from-cyan-500 hover:to-sky-500 disabled:cursor-not-allowed disabled:opacity-60">
-                                Send Message
-                            </button>
+                            <div class="rounded-[28px] border border-slate-200 bg-white p-2 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+                                <div class="flex items-end gap-2 rounded-[24px] bg-slate-50 px-3 py-2 ring-1 ring-inset ring-slate-200 focus-within:ring-cyan-500/40">
+                                    <label class="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900">
+                                        <span class="text-xl leading-none">+</span>
+                                        <InputFile OnChange="OnFileSelected" class="hidden" />
+                                    </label>
+
+                                    <textarea placeholder="Message Aimitra"
+                                              @bind="currentMessage"
+                                              @bind:event="oninput"
+                                              rows="1"
+                                              class="min-h-[2.75rem] flex-1 resize-none bg-transparent px-1 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                                              @onkeyup="OnMessageKeyUp"></textarea>
+
+                                    <button type="button"
+                                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+                                            title="Voice input (coming soon)">
+                                        <span class="text-lg leading-none">🎤</span>
+                                    </button>
+
+                                    <button @onclick="Send"
+                                            disabled="@(isThinking || string.IsNullOrWhiteSpace(currentMessage))"
+                                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-md shadow-blue-200 transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40">
+                                        <span class="text-lg leading-none">↑</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -168,19 +183,22 @@
 	private bool isThinking;
 	private DotNetObjectReference<Chat>? objRef;
     private IBrowserFile? selectedFile;
+    private string welcomeMessage = string.Empty;
 
-    protected override void OnInitialized()
+    protected override Task OnInitializedAsync()
     {
-        collectionName = $"chat-{Guid.NewGuid():N}";
-        DocumentMemory.SetLastCollection(collectionName);
+        welcomeMessage = AgentDefinitions.GetWelcomeMessage();
+        return Task.CompletedTask;
     }
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
 		if (firstRender)
 		{
+            collectionName = await JS.InvokeAsync<string>("aimitraChat.getOrCreateSessionCollection", "chat");
+            DocumentMemory.SetLastCollection(collectionName);
 			objRef = DotNetObjectReference.Create(this);
-			await JS.InvokeVoidAsync("aimitraChat.start", objRef);
+			await JS.InvokeVoidAsync("aimitraChat.start", objRef, collectionName);
 		}
 	}
 
@@ -203,15 +221,7 @@
 			isThinking = true;
 			StateHasChanged();
 
-            var textToSend = currentMessage;
-            var matches = await DocumentMemory.AskAsync(currentMessage, collectionName, topK: 3);
-            if (matches.Count > 0)
-            {
-                var context = string.Join("\n\n", matches.Select(m => $"[{m.Source}] {m.Snippet}"));
-                textToSend = $"Use the following session knowledge base context to answer.\n\nContext:\n{context}\n\nUser question: {currentMessage}";
-            }
-
-			await JS.InvokeVoidAsync("aimitraChat.sendMessage", user, textToSend);
+			await JS.InvokeVoidAsync("aimitraChat.sendMessage", user, currentMessage);
 			currentMessage = string.Empty;
 			StateHasChanged();
 		}
@@ -264,6 +274,7 @@
 
 	public void Dispose()
 	{
+        _ = JS.InvokeVoidAsync("aimitraChat.stop");
 		objRef?.Dispose();
 	}
 }

@@ -99,6 +99,18 @@ Console.WriteLine("Kernel function options:");
                 .ToList();
         }
 
+        public string GetWelcomeMessage()
+        {
+            var definitions = LoadActiveAgentDefinitions();
+            var welcomeMessage = definitions
+                .Select(definition => definition.WelcomeMessage?.Trim())
+                .FirstOrDefault(message => !string.IsNullOrWhiteSpace(message));
+
+            return string.IsNullOrWhiteSpace(welcomeMessage)
+                ? "Welcome to Aimitra. Start a conversation and I’ll route it through the right tools, knowledge base, and guardrails."
+                : welcomeMessage!;
+        }
+
         private static IReadOnlyList<KernelFunctionOption> LoadPromptKernelFunctionOptions()
         {
             var results = new List<KernelFunctionOption>();

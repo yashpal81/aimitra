@@ -16,6 +16,7 @@ namespace Aimitra.WebChat.Models
         public string Name { get; set; } = string.Empty;
         public bool Active { get; set; } = true;
         public string Description { get; set; } = string.Empty;
+        public string WelcomeMessage { get; set; } = string.Empty;
         public List<TopicDefinition> Topics { get; set; } = new();
     }
 

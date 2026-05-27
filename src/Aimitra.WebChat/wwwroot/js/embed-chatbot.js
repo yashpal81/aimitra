@@ -2,6 +2,7 @@
   // 1. Get configuration from the script tag
   const scriptTag = document.getElementById('ai-chatbot-loader');
   const chatUrl = scriptTag.getAttribute('data-app-url');
+  const sessionCollection = scriptTag.getAttribute('data-session-collection') || '';
 
   // 2. Create and inject CSS directly into the host page
   const style = document.createElement('style');

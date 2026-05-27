@@ -7,6 +7,8 @@ using Aimitra.Services.Orchestration;
 using Aimitra.Services.Plugins;
 using Aimitra.SamplePlugins.Plugins;
 using Microsoft.SemanticKernel;
+using Microsoft.KernelMemory;
+using Microsoft.KernelMemory.AI.OpenAI;
 using Aimitra.WebChat.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +22,8 @@ var openAIUrl = Environment.GetEnvironmentVariable("OPENAI_URL") ?? string.Empty
 var openAIModel = Environment.GetEnvironmentVariable("OPENAI_MODEL") ?? string.Empty;
 var presidioEndpoint = Environment.GetEnvironmentVariable("PRESIDIO_ENDPOINT") ?? string.Empty;
 var routeAgent = Environment.GetEnvironmentVariable("ROUTE_AGENT") ?? "topic_selector";
+var geminiApiKey = Environment.GetEnvironmentVariable("API_KEY") ?? string.Empty;
+var documentMemoryProvider = Environment.GetEnvironmentVariable("DOCUMENT_MEMORY_PROVIDER")?.Trim().ToLowerInvariant() ?? "custom";
 
 builder.WebHost.UseUrls("http://0.0.0.0:5000");
 builder.Services.AddRazorPages();
@@ -27,7 +31,42 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<AgentDefinitionStore>();
 builder.Services.AddSingleton<AgentDefinitionLoader>();
-builder.Services.AddSingleton<IDocumentMemoryService, DocumentMemoryService>();
+
+// ── Document memory: Gemini embeddings + SQLite vector store ─────────────────
+var knowledgeDbPath = Path.Combine(AppContext.BaseDirectory, "App_Data", "knowledge-base", "vectors.db");
+Directory.CreateDirectory(Path.GetDirectoryName(knowledgeDbPath)!);
+
+if (documentMemoryProvider == "kernelmemory")
+{
+    // Kernel Memory 0.35 currently conflicts with the Azure.AI.OpenAI version
+    // resolved by the rest of this solution (via Semantic Kernel). Fall back to the
+    // custom vector-store implementation so the app can start reliably.
+    builder.Services.AddHttpClient<GeminiEmbeddingGenerator>();
+    builder.Services.AddSingleton(sp =>
+        new GeminiEmbeddingGenerator(
+            sp.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(GeminiEmbeddingGenerator)),
+            geminiApiKey));
+    builder.Services.AddSingleton(new SqliteVecDocumentStore(knowledgeDbPath));
+    builder.Services.AddSingleton<IDocumentMemoryService, DocumentVectorStoreService>();
+}
+else
+{
+    builder.Services.AddHttpClient<GeminiEmbeddingGenerator>();
+    builder.Services.AddSingleton(sp =>
+        new GeminiEmbeddingGenerator(
+            sp.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(GeminiEmbeddingGenerator)),
+            geminiApiKey));
+    builder.Services.AddSingleton(new SqliteVecDocumentStore(knowledgeDbPath));
+    if (string.IsNullOrWhiteSpace(geminiApiKey))
+    {
+        builder.Services.AddSingleton<IDocumentMemoryService, DocumentMemoryService>();
+    }
+    else
+    {
+        builder.Services.AddSingleton<IDocumentMemoryService, DocumentVectorStoreService>();
+    }
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 
 // Register SemanticKernelOrchestrator and TopicOrchestrator as singletons

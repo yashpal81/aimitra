@@ -5,12 +5,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-       <ProjectReference Include="..\Aimitra.Core\Aimitra.Core.csproj" />
+    <ProjectReference Include="..\Aimitra.Core\Aimitra.Core.csproj" />
     <ProjectReference Include="..\Aimitra.Services\Aimitra.Services.csproj" />
     <ProjectReference Include="..\Aimitra.SemanticRouteService\Aimitra.SemanticRouteService.csproj" />
     <ProjectReference Include="..\Aimitra.SamplePlugins\Aimitra.SamplePlugins.csproj" />
+    <ProjectReference Include="..\Aimitra.Plugins\Aimitra.Plugins.csproj" />
     <PackageReference Include="Microsoft.KernelMemory.Core" Version="0.35.240412.2" />
     <PackageReference Include="Microsoft.KernelMemory.AI.OpenAI" Version="0.35.240412.2" />
     <PackageReference Include="Microsoft.Data.Sqlite"       Version="8.0.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Plugins.Core" Version="1.45.0-alpha" />
   </ItemGroup>
 </Project>

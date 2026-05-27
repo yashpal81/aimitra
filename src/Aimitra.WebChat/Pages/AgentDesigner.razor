@@ -232,48 +232,42 @@
                 </button>
             </div>
 
-            <div class="max-h-[70vh] overflow-auto">
-                <table class="min-w-full border-separate border-spacing-0">
-                    <thead class="sticky top-0 bg-slate-50">
-                        <tr>
-                            <th class="w-16 border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Select</th>
-                            <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Name of Kernel function</th>
-                            <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Plugin name as category</th>
-                            <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Type</th>
-                            <th class="border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var option in availableKernelFunctions)
-                        {
-                            <tr class="hover:bg-cyan-50/50">
-                                <td class="border-b border-slate-100 px-4 py-4 align-top">
-                                    <input type="checkbox"
-                                           class="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-                                           checked="@selectedTopic.KernelFunctions.Contains(option.FullName)"
-                                           @onchange="() => ToggleKernelFunction(option.FullName)" />
-                                </td>
-                                <td class="border-b border-slate-100 px-4 py-4 align-top">
-                                    <div class="text-sm font-medium text-slate-900">@option.DisplayName</div>
-                                    <div class="mt-1 text-xs text-slate-500">@option.FullName</div>
-                                </td>
-                                <td class="border-b border-slate-100 px-4 py-4 align-top">
-                                    <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                                        @option.Group
-                                    </span>
-                                </td>
-                                <td class="border-b border-slate-100 px-4 py-4 align-top">
-                                    <span class="inline-flex rounded-full @(option.FunctionType == "Prompt" ? "bg-amber-100 text-amber-800" : "bg-cyan-100 text-cyan-800") px-2.5 py-1 text-xs font-medium">
-                                        @option.FunctionType
-                                    </span>
-                                </td>
-                                <td class="border-b border-slate-100 px-4 py-4 align-top text-sm leading-6 text-slate-600">
-                                    @option.Description
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+            <div class="border-b border-slate-200 px-6 pt-4">
+                <div class="flex flex-wrap gap-2">
+                    <button type="button"
+                            class="@GetTabButtonClass("System")"
+                            @onclick="SelectSystemTab">
+                        System
+                        <span class="ml-2 rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-semibold">@systemFunctions.Count</span>
+                    </button>
+                    <button type="button"
+                            class="@GetTabButtonClass("Native")"
+                            @onclick="SelectNativeTab">
+                        Native
+                        <span class="ml-2 rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-semibold">@nativeFunctions.Count</span>
+                    </button>
+                    <button type="button"
+                            class="@GetTabButtonClass("Prompt")"
+                            @onclick="SelectPromptTab">
+                        Prompt
+                        <span class="ml-2 rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-semibold">@promptFunctions.Count</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="max-h-[70vh] overflow-auto p-6">
+                @if (ActiveFunctionTab == "System")
+                {
+                    @RenderFunctionTable(systemFunctions, "Built-in Semantic Kernel functions")
+                }
+                else if (ActiveFunctionTab == "Native")
+                {
+                    @RenderFunctionTable(nativeFunctions, "Application-defined plugin functions")
+                }
+                else
+                {
+                    @RenderFunctionTable(promptFunctions, "Prompt-backed plugin functions")
+                }
             </div>
 
             <div class="flex items-center justify-between gap-4 border-t border-slate-200 px-6 py-4">
@@ -295,6 +289,9 @@
     public string? EditingFilePath { get; set; }
 
     private List<KernelFunctionOption> availableKernelFunctions = new();
+    private List<KernelFunctionOption> systemFunctions = new();
+    private List<KernelFunctionOption> nativeFunctions = new();
+    private List<KernelFunctionOption> promptFunctions = new();
     private string editingFilePath = string.Empty;
     private string promptPluginName = "OfficePlugin";
     private string promptFunctionName = "MeetingDetails";
@@ -320,6 +317,7 @@
     private bool isPromptPluginModalOpen;
     private int? activeTopicIndex;
     private TopicDefinition? selectedTopic;
+    private string ActiveFunctionTab { get; set; } = "System";
 
     private string previewJson => System.Text.Json.JsonSerializer.Serialize(agent, new System.Text.Json.JsonSerializerOptions
     {
@@ -329,6 +327,9 @@
     protected override void OnInitialized()
     {
         availableKernelFunctions = DefinitionLoader.LoadAvailableKernelFunctions().ToList();
+        systemFunctions = availableKernelFunctions.Where(option => option.FunctionType == "System").ToList();
+        nativeFunctions = availableKernelFunctions.Where(option => option.FunctionType == "Native").ToList();
+        promptFunctions = availableKernelFunctions.Where(option => option.FunctionType == "Prompt").ToList();
         if (!string.IsNullOrWhiteSpace(EditingFilePath))
         {
             editingFilePath = Uri.UnescapeDataString(EditingFilePath);
@@ -370,6 +371,7 @@
         activeTopicIndex = topicIndex;
         selectedTopic = agent.Topics[topicIndex];
         isFunctionModalOpen = true;
+        ActiveFunctionTab = "System";
     }
 
     private void CloseFunctionModal()
@@ -378,6 +380,115 @@
         activeTopicIndex = null;
         selectedTopic = null;
     }
+
+    private void SelectFunctionTab(string tabName)
+    {
+        ActiveFunctionTab = tabName;
+    }
+
+    private void SelectSystemTab() => SelectFunctionTab("System");
+
+    private void SelectNativeTab() => SelectFunctionTab("Native");
+
+    private void SelectPromptTab() => SelectFunctionTab("Prompt");
+
+    private string GetTabButtonClass(string tabName)
+    {
+        var active = ActiveFunctionTab == tabName;
+        return active
+            ? "rounded-t-xl border border-b-0 border-slate-200 bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+            : "rounded-t-xl border border-b-0 border-slate-200 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200";
+    }
+
+    private RenderFragment RenderFunctionTable(IEnumerable<KernelFunctionOption> functions, string emptyMessage) => builder =>
+    {
+        var sequence = 0;
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "rounded-2xl border border-slate-200 overflow-hidden");
+
+        builder.OpenElement(sequence++, "table");
+        builder.AddAttribute(sequence++, "class", "min-w-full border-separate border-spacing-0");
+
+        builder.OpenElement(sequence++, "thead");
+        builder.AddAttribute(sequence++, "class", "sticky top-0 bg-slate-50");
+        builder.OpenElement(sequence++, "tr");
+        builder.AddMarkupContent(sequence++, "<th class=\"w-16 border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500\">Select</th>");
+        builder.AddMarkupContent(sequence++, "<th class=\"border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500\">Name of Kernel function</th>");
+        builder.AddMarkupContent(sequence++, "<th class=\"border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500\">Plugin name as category</th>");
+        builder.AddMarkupContent(sequence++, "<th class=\"border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500\">Type</th>");
+        builder.AddMarkupContent(sequence++, "<th class=\"border-b border-slate-200 px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500\">Description</th>");
+        builder.CloseElement();
+        builder.CloseElement();
+
+        builder.OpenElement(sequence++, "tbody");
+        if (!functions.Any())
+        {
+            builder.OpenElement(sequence++, "tr");
+            builder.OpenElement(sequence++, "td");
+            builder.AddAttribute(sequence++, "colspan", "5");
+            builder.AddAttribute(sequence++, "class", "px-4 py-8 text-center text-sm text-slate-500");
+            builder.AddContent(sequence++, emptyMessage);
+            builder.CloseElement();
+            builder.CloseElement();
+        }
+        else
+        {
+            foreach (var option in functions)
+            {
+                builder.OpenElement(sequence++, "tr");
+                builder.AddAttribute(sequence++, "class", "hover:bg-cyan-50/50");
+
+                builder.OpenElement(sequence++, "td");
+                builder.AddAttribute(sequence++, "class", "border-b border-slate-100 px-4 py-4 align-top");
+                builder.OpenElement(sequence++, "input");
+                builder.AddAttribute(sequence++, "type", "checkbox");
+                builder.AddAttribute(sequence++, "class", "mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500");
+                builder.AddAttribute(sequence++, "checked", selectedTopic!.KernelFunctions.Contains(option.FullName));
+                builder.AddAttribute(sequence++, "onchange", EventCallback.Factory.Create(this, () => ToggleKernelFunction(option.FullName)));
+                builder.CloseElement();
+                builder.CloseElement();
+
+                builder.OpenElement(sequence++, "td");
+                builder.AddAttribute(sequence++, "class", "border-b border-slate-100 px-4 py-4 align-top");
+                builder.OpenElement(sequence++, "div");
+                builder.AddAttribute(sequence++, "class", "text-sm font-medium text-slate-900");
+                builder.AddContent(sequence++, option.DisplayName);
+                builder.CloseElement();
+                builder.OpenElement(sequence++, "div");
+                builder.AddAttribute(sequence++, "class", "mt-1 text-xs text-slate-500");
+                builder.AddContent(sequence++, option.FullName);
+                builder.CloseElement();
+                builder.CloseElement();
+
+                builder.OpenElement(sequence++, "td");
+                builder.AddAttribute(sequence++, "class", "border-b border-slate-100 px-4 py-4 align-top");
+                builder.OpenElement(sequence++, "span");
+                builder.AddAttribute(sequence++, "class", "inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700");
+                builder.AddContent(sequence++, option.Group);
+                builder.CloseElement();
+                builder.CloseElement();
+
+                builder.OpenElement(sequence++, "td");
+                builder.AddAttribute(sequence++, "class", "border-b border-slate-100 px-4 py-4 align-top");
+                builder.OpenElement(sequence++, "span");
+                builder.AddAttribute(sequence++, "class", $"inline-flex rounded-full {(option.FunctionType == "Prompt" ? "bg-amber-100 text-amber-800" : option.FunctionType == "System" ? "bg-violet-100 text-violet-800" : "bg-cyan-100 text-cyan-800")} px-2.5 py-1 text-xs font-medium");
+                builder.AddContent(sequence++, option.FunctionType);
+                builder.CloseElement();
+                builder.CloseElement();
+
+                builder.OpenElement(sequence++, "td");
+                builder.AddAttribute(sequence++, "class", "border-b border-slate-100 px-4 py-4 align-top text-sm leading-6 text-slate-600");
+                builder.AddContent(sequence++, option.Description);
+                builder.CloseElement();
+
+                builder.CloseElement();
+            }
+        }
+
+        builder.CloseElement();
+        builder.CloseElement();
+        builder.CloseElement();
+    };
 
     private void ToggleKernelFunction(string functionName)
     {

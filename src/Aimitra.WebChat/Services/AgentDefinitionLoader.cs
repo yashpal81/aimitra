@@ -1,11 +1,13 @@
 using System.Text.Json;
 using Aimitra.Core.Models;
+using Aimitra.Plugins.Plugins;
 using Aimitra.SamplePlugins.Plugins;
 using Aimitra.Security.Guardrails;
 using Aimitra.Services.Orchestration;
 using Aimitra.Services.Plugins;
 using Aimitra.WebChat.Models;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Plugins.Core;
 
 namespace Aimitra.WebChat.Services
 {
@@ -61,6 +63,7 @@ namespace Aimitra.WebChat.Services
         {
             var options = new List<KernelFunctionOption>();
             var pluginSources = BuildPluginSources();
+            var systemPlugins = GetSystemPluginNames();
             Console.WriteLine($"Building list of available kernel functions from plugin source map with {pluginSources.Count} plugins.");
             foreach (var (pluginName, pluginSource) in pluginSources)
             {
@@ -79,7 +82,7 @@ Console.WriteLine($"Adding kernel function option for function '{functionName}' 
                         DisplayName = functionName,
                         FullName = $"{pluginName}.{functionName}",
                         Group = pluginName,
-                        FunctionType = "Native",
+                        FunctionType = systemPlugins.Contains(pluginName) ? "System" : "Native",
                         Description = GetFunctionDescription(function)
                     });
                 }
@@ -256,7 +259,7 @@ Console.WriteLine("Kernel function options:");
 
         private static Dictionary<string, KernelPlugin> BuildCodePluginCatalog()
         {
-            return new Dictionary<string, KernelPlugin>(StringComparer.OrdinalIgnoreCase)
+            var pluginCatalog = new Dictionary<string, KernelPlugin>(StringComparer.OrdinalIgnoreCase)
             {
                 ["DatabaseTools"] = KernelPluginFactory.CreateFromObject(new DatabasePlugin(), "DatabaseTools"),
                 ["VerificationPlugin"] = KernelPluginFactory.CreateFromObject(new VerificationPlugin(new ConversationState()), "VerificationPlugin"),
@@ -265,8 +268,17 @@ Console.WriteLine("Kernel function options:");
                 ["PromptInjectionGuardrail"] = KernelPluginFactory.CreateFromObject(new PromptInjectionGuardrail(), "PromptInjectionGuardrail"),
                 ["SampleGreetingPlugin"] = KernelPluginFactory.CreateFromObject(new SampleGreetingPlugin(), "SampleGreetingPlugin"),
                 ["AstrologerPlugin"] = KernelPluginFactory.CreateFromObject(new AstrologerPlugin(), "AstrologerPlugin"),
-                ["KnowledgeBasePlugin"] = KernelPluginFactory.CreateFromObject(new KnowledgeBasePlugin(new DocumentMemoryService()), "KnowledgeBasePlugin")
+                ["KnowledgeBasePlugin"] = KernelPluginFactory.CreateFromObject(new KnowledgeBasePlugin(new DocumentMemoryService()), "KnowledgeBasePlugin"),
+                ["ConversationSummaryPlugin"] = KernelPluginFactory.CreateFromObject(new ConversationSummaryPlugin(), "ConversationSummaryPlugin"),
+                ["TimePlugin"] = KernelPluginFactory.CreateFromObject(new TimePlugin(), "TimePlugin"),
+                ["TextPlugin"] = KernelPluginFactory.CreateFromObject(new TextPlugin(), "TextPlugin"),
+                ["MathPlugin"] = KernelPluginFactory.CreateFromObject(new MathPlugin(), "MathPlugin"),
+                ["FileIOPlugin"] = KernelPluginFactory.CreateFromObject(new FileIOPlugin(), "FileIOPlugin"),
+                ["HttpPlugin"] = KernelPluginFactory.CreateFromObject(new HttpPlugin(), "HttpPlugin"),
+                ["WaitPlugin"] = KernelPluginFactory.CreateFromObject(new WaitPlugin(), "WaitPlugin")
             };
+
+            return pluginCatalog;
         }
 
         private static Dictionary<string, object> BuildPluginSources()
@@ -280,7 +292,28 @@ Console.WriteLine("Kernel function options:");
                 ["PromptInjectionGuardrail"] = new PromptInjectionGuardrail(),
                 ["SampleGreetingPlugin"] = new SampleGreetingPlugin(),
                 ["AstrologerPlugin"] = new AstrologerPlugin(),
-                ["KnowledgeBasePlugin"] = new KnowledgeBasePlugin(new DocumentMemoryService())
+                ["KnowledgeBasePlugin"] = new KnowledgeBasePlugin(new DocumentMemoryService()),
+                ["ConversationSummaryPlugin"] = new ConversationSummaryPlugin(),
+                ["TimePlugin"] = new TimePlugin(),
+                ["TextPlugin"] = new TextPlugin(),
+                ["MathPlugin"] = new MathPlugin(),
+                ["FileIOPlugin"] = new FileIOPlugin(),
+                ["HttpPlugin"] = new HttpPlugin(),
+                ["WaitPlugin"] = new WaitPlugin()
+            };
+        }
+
+        private static HashSet<string> GetSystemPluginNames()
+        {
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "ConversationSummaryPlugin",
+                "TimePlugin",
+                "TextPlugin",
+                "MathPlugin",
+                "FileIOPlugin",
+                "HttpPlugin",
+                "WaitPlugin"
             };
         }
 

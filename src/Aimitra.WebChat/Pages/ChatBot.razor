@@ -3,6 +3,7 @@
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components.Forms
 @inject Aimitra.WebChat.Services.IDocumentMemoryService DocumentMemory
+@inject Aimitra.WebChat.Services.AgentDefinitionLoader AgentDefinitions
 @inject IJSRuntime JS
 
 <style>
@@ -40,7 +41,7 @@
         @if (messages.Count == 0)
         {
             <div class="rounded-xl border border-dashed border-slate-200 bg-white p-4 text-xs text-center text-slate-400">
-                Start a conversation. Secure topic-aware pipeline routing is active.
+                @welcomeMessage
             </div>
         }
         else
@@ -133,17 +134,20 @@
     private bool isThinking;
     private DotNetObjectReference<ChatBot>? objRef;
     private IBrowserFile? selectedFile;
+    private string welcomeMessage = string.Empty;
 
-    protected override void OnInitialized()
+    protected override Task OnInitializedAsync()
     {
-        collectionName = $"chatbot-{Guid.NewGuid():N}";
-        DocumentMemory.SetLastCollection(collectionName);
+        welcomeMessage = AgentDefinitions.GetWelcomeMessage();
+        return Task.CompletedTask;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            collectionName = await JS.InvokeAsync<string>("aimitraChat.getOrCreateSessionCollection", "chatbot");
+            DocumentMemory.SetLastCollection(collectionName);
             objRef = DotNetObjectReference.Create(this);
             await JS.InvokeVoidAsync("aimitraChat.start", objRef, collectionName);
         }
@@ -226,6 +230,7 @@
 
     public void Dispose()
     {
+        _ = JS.InvokeVoidAsync("aimitraChat.stop");
         objRef?.Dispose();
     }
 }

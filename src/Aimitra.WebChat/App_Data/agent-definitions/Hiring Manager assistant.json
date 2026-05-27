@@ -1,7 +1,8 @@
 {
   "Name": "Hiring Manager assistant",
-  "Active": false,
-  "Description": "",
+  "Active": true,
+  "Description": "Can load database tables from salesforceCoder database and execute sql query to get data from database. Cant delete Data.",
+  "WelcomeMessage": "Welcome to the Hiring Manager assistant. How can I assist you today?",
   "Topics": [
     {
       "Name": "Database Tool ",

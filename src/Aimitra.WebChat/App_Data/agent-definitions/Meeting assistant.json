@@ -1,7 +1,8 @@
 {
   "Name": "Meeting assistant",
-  "Active": true,
+  "Active": false,
   "Description": "meeting assistant to evaluate and answer based on knowledge base documents",
+  "WelcomeMessage": "Welcome to the Meeting assistant. Share your meeting notes or a question, and I’ll help extract action items and answers from the knowledge base.",
   "Topics": [
     {
       "Name": "Zoom Meeting assistant",

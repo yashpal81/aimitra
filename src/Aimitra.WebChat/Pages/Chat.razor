@@ -1,6 +1,7 @@
 @page "/chat"
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components.Forms
+@using Markdig
 @inject Aimitra.WebChat.Services.IDocumentMemoryService DocumentMemory
 @inject Aimitra.WebChat.Services.AgentDefinitionLoader AgentDefinitions
 @inject IJSRuntime JS
@@ -67,7 +68,7 @@
                                             <div class="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] @(m.User == "Aimitra" ? "text-cyan-700" : "text-slate-500")">
                                                 @m.User
                                             </div>
-                                            <div class="whitespace-pre-wrap text-sm leading-6">@m.Text</div>
+                                            <div class="text-sm leading-6">@((MarkupString)RenderMarkdown(m.Text))</div>
                                         </div>
                                     </div>
                                 }
@@ -175,7 +176,7 @@
 </div>
 
 @code {
-	private List<MessageEntry> messages = new();
+    private List<MessageEntry> messages = new();
 	private string user = "User";
 	private string currentMessage = string.Empty;
     private string collectionName = string.Empty;
@@ -183,7 +184,11 @@
 	private bool isThinking;
 	private DotNetObjectReference<Chat>? objRef;
     private IBrowserFile? selectedFile;
-    private string welcomeMessage = string.Empty;
+	private string welcomeMessage = string.Empty;
+    private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .DisableHtml()
+        .Build();
 
     protected override Task OnInitializedAsync()
     {
@@ -203,16 +208,40 @@
 	}
 
 	[JSInvokable]
-	public Task ReceiveMessage(string user, string message)
-	{
-		messages.Add(new MessageEntry { User = user, Text = message });
-		if (user == "Aimitra")
-		{
-			isThinking = false;
-		}
-		StateHasChanged();
-		return Task.CompletedTask;
-	}
+    public Task ReceiveMessage(string user, string message, string? messageId, bool isPartial)
+    {
+        UpsertMessage(user, message, messageId, isPartial);
+        if (user == "Aimitra")
+        {
+            isThinking = isPartial;
+        }
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void UpsertMessage(string user, string message, string? messageId, bool isPartial)
+    {
+        var existing = !string.IsNullOrWhiteSpace(messageId)
+            ? messages.FindIndex(m => string.Equals(m.Id, messageId, StringComparison.OrdinalIgnoreCase))
+            : -1;
+
+        if (existing >= 0)
+        {
+            messages[existing].User = user;
+            messages[existing].Text = message;
+            messages[existing].IsPartial = isPartial;
+            messages[existing].Id = messageId ?? messages[existing].Id;
+            return;
+        }
+
+        messages.Add(new MessageEntry
+        {
+            Id = messageId ?? Guid.NewGuid().ToString("N"),
+            User = user,
+            Text = message,
+            IsPartial = isPartial
+        });
+    }
 
 	private async Task Send()
 	{
@@ -258,19 +287,27 @@
         }
     }
 
-	private void OnMessageKeyUp(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
-	{
-		if (e.Key == "Enter" && !e.ShiftKey)
-		{
-			Send();
-		}
-	}
+    private void OnMessageKeyUp(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            Send();
+        }
+    }
 
-	private class MessageEntry
-	{
-		public string User { get; set; } = string.Empty;
-		public string Text { get; set; } = string.Empty;
-	}
+    private static string RenderMarkdown(string text)
+    {
+        var markdown = string.IsNullOrWhiteSpace(text) ? string.Empty : text;
+        return Markdown.ToHtml(markdown, MarkdownPipeline);
+    }
+
+    private class MessageEntry
+    {
+        public string Id { get; set; } = string.Empty;
+        public string User { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+        public bool IsPartial { get; set; }
+    }
 
 	public void Dispose()
 	{

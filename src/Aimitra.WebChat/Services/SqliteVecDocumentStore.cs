@@ -147,6 +147,30 @@ public sealed class SqliteVecDocumentStore : IDisposable
         return result;
     }
 
+    public IReadOnlyList<string> ListCollections()
+    {
+        using var conn = Open();
+        using var cmd  = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT DISTINCT collection
+            FROM   documents
+            ORDER  BY collection COLLATE NOCASE;
+            ";
+
+        var result = new List<string>();
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            var collection = reader.GetString(0);
+            if (!string.IsNullOrWhiteSpace(collection))
+            {
+                result.Add(collection);
+            }
+        }
+
+        return result;
+    }
+
     public DocumentMemoryEntry? GetDocument(string documentId)
     {
         using var conn = Open();

@@ -112,6 +112,23 @@ public sealed class KernelMemoryDocumentService : IDocumentMemoryService
         return Task.FromResult<IReadOnlyList<DocumentMemoryEntry>>(entries);
     }
 
+    public Task<IReadOnlyList<string>> ListCollectionsAsync(CancellationToken cancellationToken = default)
+    {
+        if (!Directory.Exists(_baseFolder))
+        {
+            return Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>());
+        }
+
+        var collections = Directory.EnumerateDirectories(_baseFolder)
+            .Select(Path.GetFileName)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name!)
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return Task.FromResult<IReadOnlyList<string>>(collections);
+    }
+
     public async Task DeleteDocumentAsync(string documentId, string? collection = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(documentId)) throw new ArgumentException("Document id is required.", nameof(documentId));

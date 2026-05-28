@@ -12,14 +12,14 @@ namespace Aimitra.WebChat.Hubs
         private static readonly ConcurrentDictionary<string, string> ConnectionCollections = new(StringComparer.OrdinalIgnoreCase);
         private readonly TopicOrchestrator _orchestrator;
         private readonly IDocumentMemoryService _documentMemory;
-        private readonly string _factsCollection;
+        private readonly string _sharedCollection;
 
         public ChatHub(TopicOrchestrator orchestrator, IDocumentMemoryService documentMemory)
         {
             _orchestrator = orchestrator;
             _documentMemory = documentMemory;
-            _factsCollection = Environment.GetEnvironmentVariable("KERNEL_MEMORY_FACTS_COLLECTION")?.Trim()
-                ?? "facts";
+            _sharedCollection = Environment.GetEnvironmentVariable("KERNEL_MEMORY_SHARED_COLLECTION")?.Trim()
+                ?? "aimitra";
         }
 
         public Task SetSessionCollection(string collection)
@@ -41,23 +41,28 @@ namespace Aimitra.WebChat.Hubs
         public async Task SendMessage(string user, string message)
         {
             // Broadcast the user's message to everyone except the sender.
-            await Clients.Others.SendAsync("ReceiveMessage", user, message);
+            var userMessageId = Guid.NewGuid().ToString("N");
+            await Clients.Others.SendAsync("ReceiveMessage", user, message, userMessageId, false);
 
             // Route the message through the orchestrator to get bot response
             string botResponse;
+            var assistantMessageId = Guid.NewGuid().ToString("N");
             try
             {
+                await Clients.All.SendAsync("ReceiveMessage", "Aimitra", "Thinking...", assistantMessageId, true);
+
                 var contexts = new List<string>();
                 ConnectionCollections.TryGetValue(Context.ConnectionId, out var sessionCollection);
 
-                var factsMatches = await _documentMemory.AskAsync(message, _factsCollection, topK: 3).ConfigureAwait(false);
-                if (factsMatches.Count > 0)
+                var sharedMatches = await _documentMemory.AskAsync(message, _sharedCollection, topK: 3).ConfigureAwait(false);
+                if (sharedMatches.Count > 0)
                 {
-                    var factsContext = string.Join("\n\n", factsMatches.Select(m => $"[{m.Source}] {m.Snippet}"));
-                    contexts.Add($"FACTS CONTEXT:\n{factsContext}");
+                    var sharedContext = string.Join("\n\n", sharedMatches.Select(m => $"[{m.Source}] {m.Snippet}"));
+                    contexts.Add($"SHARED CONTEXT ({_sharedCollection}):\n{sharedContext}");
                 }
 
-                if (!string.IsNullOrWhiteSpace(sessionCollection))
+                if (!string.IsNullOrWhiteSpace(sessionCollection) &&
+                    !string.Equals(sessionCollection, _sharedCollection, StringComparison.OrdinalIgnoreCase))
                 {
                     var sessionMatches = await _documentMemory.AskAsync(message, sessionCollection, topK: 3).ConfigureAwait(false);
                     if (sessionMatches.Count > 0)
@@ -71,15 +76,43 @@ namespace Aimitra.WebChat.Hubs
                     ? message
                     : $"Use the following context to answer.\n\n{string.Join("\n\n", contexts)}\n\nUser question: {message}";
 
-                botResponse = await _orchestrator.RunTurnAsync(enrichedMessage).ConfigureAwait(false);
+                botResponse = await _orchestrator.RunTurnAsync(
+                        enrichedMessage,
+                        cancellationToken: default,
+                        intermediateResponseCallback: async partial =>
+                        {
+                            await Clients.All.SendAsync("ReceiveMessage", "Aimitra", partial, assistantMessageId, true);
+                        })
+                    .ConfigureAwait(false);
             }
             catch (System.Exception ex)
             {
                 botResponse = $"(assistant error: {ex.Message})";
             }
 
-            // Send assistant reply as coming from 'Aimitra'
-            await Clients.All.SendAsync("ReceiveMessage", "Aimitra", botResponse);
+            await Clients.All.SendAsync("ReceiveMessage", "Aimitra", botResponse, assistantMessageId, false);
+        }
+
+        private async Task StreamAssistantResponseAsync(string response, string messageId)
+        {
+            var text = response ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                await Clients.All.SendAsync("ReceiveMessage", "Aimitra", string.Empty, messageId, false);
+                return;
+            }
+
+            var builder = new System.Text.StringBuilder();
+            var tokens = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var token in tokens)
+            {
+                builder.Append(token);
+                builder.Append(' ');
+                await Clients.All.SendAsync("ReceiveMessage", "Aimitra", builder.ToString().TrimEnd(), messageId, true);
+                await Task.Delay(18);
+            }
+
+            await Clients.All.SendAsync("ReceiveMessage", "Aimitra", text, messageId, false);
         }
     }
 }

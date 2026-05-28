@@ -2,6 +2,7 @@
 @layout Aimitra.WebChat.Shared.EmptyLayout
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components.Forms
+@using Markdig
 @inject Aimitra.WebChat.Services.IDocumentMemoryService DocumentMemory
 @inject Aimitra.WebChat.Services.AgentDefinitionLoader AgentDefinitions
 @inject IJSRuntime JS
@@ -54,7 +55,7 @@
                         {
                             <div class="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-cyan-700">@m.User</div>
                         }
-                        <div class="whitespace-pre-wrap">@m.Text</div>
+                        <div>@((MarkupString)RenderMarkdown(m.Text))</div>
                     </div>
                 </div>
             }
@@ -135,6 +136,10 @@
     private DotNetObjectReference<ChatBot>? objRef;
     private IBrowserFile? selectedFile;
     private string welcomeMessage = string.Empty;
+    private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .DisableHtml()
+        .Build();
 
     protected override Task OnInitializedAsync()
     {
@@ -157,15 +162,39 @@
     }
 
     [JSInvokable]
-    public Task ReceiveMessage(string user, string message)
+    public Task ReceiveMessage(string user, string message, string? messageId, bool isPartial)
     {
-        messages.Add(new MessageEntry { User = user, Text = message });
+        UpsertMessage(user, message, messageId, isPartial);
         if (user == "Aimitra")
         {
-            isThinking = false;
+            isThinking = isPartial;
         }
         StateHasChanged();
         return Task.CompletedTask;
+    }
+
+    private void UpsertMessage(string user, string message, string? messageId, bool isPartial)
+    {
+        var existing = !string.IsNullOrWhiteSpace(messageId)
+            ? messages.FindIndex(m => string.Equals(m.Id, messageId, StringComparison.OrdinalIgnoreCase))
+            : -1;
+
+        if (existing >= 0)
+        {
+            messages[existing].User = user;
+            messages[existing].Text = message;
+            messages[existing].IsPartial = isPartial;
+            messages[existing].Id = messageId ?? messages[existing].Id;
+            return;
+        }
+
+        messages.Add(new MessageEntry
+        {
+            Id = messageId ?? Guid.NewGuid().ToString("N"),
+            User = user,
+            Text = message,
+            IsPartial = isPartial
+        });
     }
 
     private async Task Send()
@@ -222,10 +251,18 @@
         }
     }
 
+    private static string RenderMarkdown(string text)
+    {
+        var markdown = string.IsNullOrWhiteSpace(text) ? string.Empty : text;
+        return Markdown.ToHtml(markdown, MarkdownPipeline);
+    }
+
     private class MessageEntry
     {
+        public string Id { get; set; } = string.Empty;
         public string User { get; set; } = string.Empty;
         public string Text { get; set; } = string.Empty;
+        public bool IsPartial { get; set; }
     }
 
     public void Dispose()

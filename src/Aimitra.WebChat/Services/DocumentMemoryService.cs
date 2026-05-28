@@ -25,6 +25,7 @@ namespace Aimitra.WebChat.Services
         Task<string> ImportTextAsync(string title, string content, string? collection = null, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<DocumentMemoryMatch>> AskAsync(string question, string? collection = null, int topK = 5, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<DocumentMemoryEntry>> ListDocumentsAsync(string? collection = null, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<string>> ListCollectionsAsync(CancellationToken cancellationToken = default);
         Task DeleteDocumentAsync(string documentId, string? collection = null, CancellationToken cancellationToken = default);
         Task ReindexDocumentAsync(string documentId, string? collection = null, CancellationToken cancellationToken = default);
         string GetLastCollection();
@@ -155,6 +156,23 @@ namespace Aimitra.WebChat.Services
             return Task.FromResult<IReadOnlyList<DocumentMemoryEntry>>(entries
                 .OrderByDescending(x => x.UpdatedAtUtc)
                 .ToList());
+        }
+
+        public Task<IReadOnlyList<string>> ListCollectionsAsync(CancellationToken cancellationToken = default)
+        {
+            if (!Directory.Exists(_baseFolder))
+            {
+                return Task.FromResult<IReadOnlyList<string>>(new List<string>());
+            }
+
+            var collections = Directory.EnumerateDirectories(_baseFolder)
+                .Select(Path.GetFileName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => name!)
+                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return Task.FromResult<IReadOnlyList<string>>(collections);
         }
 
         public Task DeleteDocumentAsync(string documentId, string? collection = null, CancellationToken cancellationToken = default)

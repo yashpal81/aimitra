@@ -84,7 +84,8 @@ namespace Aimitra.Services.Orchestration
         /// </summary>
         public async Task<string> RunTurnAsync(
             string userInput,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            Func<string, Task>? intermediateResponseCallback = null)
         {
             if (string.IsNullOrWhiteSpace(userInput))
                 return string.Empty;
@@ -178,6 +179,10 @@ namespace Aimitra.Services.Orchestration
                 }
 
                 stepResults.Add((topic.Name, stepResult));
+                if (intermediateResponseCallback is not null)
+                {
+                    await intermediateResponseCallback(stepResult).ConfigureAwait(false);
+                }
 
                 // Parse any go_back JSON embedded in the response
                 var embeddedNextTopic = ParseGoBackDirective(stepResult);
@@ -208,6 +213,10 @@ namespace Aimitra.Services.Orchestration
 
             // 7 — Record assistant reply
             State.AddTurn("Agent", finalResponse);
+            if (intermediateResponseCallback is not null)
+            {
+                await intermediateResponseCallback(finalResponse).ConfigureAwait(false);
+            }
             return finalResponse;
         }
 

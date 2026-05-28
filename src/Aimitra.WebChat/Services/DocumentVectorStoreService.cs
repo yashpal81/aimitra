@@ -116,6 +116,11 @@ public sealed class DocumentVectorStoreService : IDocumentMemoryService
         return Task.FromResult(result);
     }
 
+    public Task<IReadOnlyList<string>> ListCollectionsAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<string>>(_store.ListCollections());
+    }
+
     public Task DeleteDocumentAsync(
         string documentId,
         string? collection = null,

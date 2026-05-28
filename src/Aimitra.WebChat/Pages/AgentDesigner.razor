@@ -29,220 +29,329 @@
                     }
                 </div>
 
+        <div class="mb-6 border-b border-slate-200">
+            <div class="flex flex-wrap gap-2">
+                <button type="button"
+                        class="@GetAgentTabButtonClass("ChatBot")"
+                        @onclick="SelectChatBotTab">
+                    <span class="text-sm font-semibold">💬 Chat Bot Agent</span>
+                </button>
+                <button type="button"
+                        class="@GetAgentTabButtonClass("Autonomous")"
+                        @onclick="SelectAutonomousTab">
+                    <span class="text-sm font-semibold">🤖 Autonomous Agent</span>
+                </button>
+                <button type="button"
+                        class="@GetAgentTabButtonClass("Summary")"
+                        @onclick="SelectSummaryTab">
+                    <span class="text-sm font-semibold">📋 Summary Agent</span>
+                </button>
+            </div>
+        </div>
+
         <div class="grid gap-8 @(showJsonPreview ? "lg:grid-cols-[1fr_1.2fr]" : "lg:grid-cols-1")">
             <section class="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-                <label class="mb-4 block">
-                    <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Agent Group Name</span>
-                    <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                           @bind="agent.Name"
-                           @bind:event="oninput"
-                           placeholder="e.g. Finance Assistant" />
-                </label>
 
-                <label class="mb-4 block">
-                    <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Agent Group Description</span>
-                    <textarea class="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                              rows="4"
-                              @bind="agent.Description"
-                              @bind:event="oninput"
-                              placeholder="Describe what this agent group should do and where its boundaries are."></textarea>
-                </label>
+                <!-- Chat Bot Agent Tab -->
+                @if (ActiveAgentTab == "ChatBot")
+                {
+                    <div class="space-y-6">
+                        <label class="mb-4 block">
+                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Agent Group Name</span>
+                            <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                                   @bind="agent.Name"
+                                   @bind:event="oninput"
+                                   placeholder="e.g. Finance Assistant" />
+                        </label>
 
-                <div class="mb-5 flex items-center justify-between">
-                    <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Prompt Plugin</h2>
-                    <button type="button" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100"
-                            @onclick="OpenPromptPluginModal">
-                        Create Prompt Plugin
-                    </button>
-                </div>
+                        <label class="mb-4 block">
+                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Agent Group Description</span>
+                            <textarea class="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                                      rows="4"
+                                      @bind="agent.Description"
+                                      @bind:event="oninput"
+                                      placeholder="Describe what this agent group should do and where its boundaries are."></textarea>
+                        </label>
 
-                <div class="mb-5 flex items-center justify-between">
-                    <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Topics</h2>
-                    <button type="button" class="rounded-xl bg-cyan-600 px-3 py-2 text-xs font-semibold text-white hover:bg-cyan-500"
-                            @onclick="AddTopic">
-                        Add Topic
-                    </button>
-                </div>
+                        <div class="mb-5 flex items-center justify-between">
+                            <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Prompt Plugin</h2>
+                            <button type="button" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+                                    @onclick="OpenPromptPluginModal">
+                                Create Prompt Plugin
+                            </button>
+                        </div>
 
-                <div class="space-y-5">
-                    @for (var i = 0; i < agent.Topics.Count; i++)
-                    {
-                        var topicIndex = i;
-                        var topic = agent.Topics[topicIndex];
-                        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                            <div class="mb-3 flex items-center justify-between gap-3">
-                                <h3 class="text-sm font-semibold text-slate-800">Topic @(topicIndex + 1)</h3>
-                                <button type="button" class="text-xs font-semibold text-rose-600 hover:text-rose-500"
-                                        @onclick="() => RemoveTopic(topicIndex)">
-                                    Remove
-                                </button>
-                            </div>
+                        <div class="mb-5 flex items-center justify-between">
+                            <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Topics</h2>
+                            <button type="button" class="rounded-xl bg-cyan-600 px-3 py-2 text-xs font-semibold text-white hover:bg-cyan-500"
+                                    @onclick="AddTopic">
+                                Add Topic
+                            </button>
+                        </div>
 
-                            <div class="space-y-3">
-                                <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                                       @bind="topic.Name"
-                                       @bind:event="oninput"
-                                       placeholder="Topic name" />
-
-                                <textarea class="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                                          rows="3"
-                                          @bind="topic.Description"
-                                          @bind:event="oninput"
-                                          placeholder="Topic description"></textarea>
-
-                                <div>
-                                    <div class="mb-2 flex items-center justify-between gap-3">
-                                        <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Kernel Functions</span>
-                                        <div class="flex items-center gap-3">
-                                            <span class="text-xs text-slate-400">@topic.KernelFunctions.Count selected</span>
-                                            <button type="button" class="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-800 hover:bg-cyan-100"
-                                                    @onclick="() => OpenFunctionModal(topicIndex)">
-                                                Add Function
-                                            </button>
-                                        </div>
+                        <div class="space-y-5">
+                            @for (var i = 0; i < agent.Topics.Count; i++)
+                            {
+                                var topicIndex = i;
+                                var topic = agent.Topics[topicIndex];
+                                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                                    <div class="mb-3 flex items-center justify-between gap-3">
+                                        <h3 class="text-sm font-semibold text-slate-800">Topic @(topicIndex + 1)</h3>
+                                        <button type="button" class="text-xs font-semibold text-rose-600 hover:text-rose-500"
+                                                @onclick="() => RemoveTopic(topicIndex)">
+                                            Remove
+                                        </button>
                                     </div>
 
-                                    @if (topic.KernelFunctions.Count == 0)
-                                    {
-                                        <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-                                            No kernel functions selected yet.
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="flex flex-wrap gap-2">
-                                            @for (var functionIndex = 0; functionIndex < topic.KernelFunctions.Count; functionIndex++)
-                                            {
-                                                var functionName = topic.KernelFunctions[functionIndex];
-                                                var removeTopicIndex = topicIndex;
-                                                var removeFunctionIndex = functionIndex;
-                                                <span @key="functionName" class="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-800">
-                                                    <span>@functionName</span>
-                                                    <button type="button"
-                                                            class="rounded-full px-1 text-cyan-700 hover:bg-cyan-100 hover:text-cyan-900"
-                                                            title="Remove function from topic"
-                                                            @onclick="() => RemoveKernelFunction(removeTopicIndex, removeFunctionIndex)">
-                                                        ×
+                                    <div class="space-y-3">
+                                        <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                                               @bind="topic.Name"
+                                               @bind:event="oninput"
+                                               placeholder="Topic name" />
+
+                                        <textarea class="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                                                  rows="3"
+                                                  @bind="topic.Description"
+                                                  @bind:event="oninput"
+                                                  placeholder="Topic description"></textarea>
+
+                                        <div>
+                                            <div class="mb-2 flex items-center justify-between gap-3">
+                                                <span class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Kernel Functions</span>
+                                                <div class="flex items-center gap-3">
+                                                    <span class="text-xs text-slate-400">@topic.KernelFunctions.Count selected</span>
+                                                    <button type="button" class="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-800 hover:bg-cyan-100"
+                                                            @onclick="() => OpenFunctionModal(topicIndex)">
+                                                        Add Function
                                                     </button>
-                                                </span>
+                                                </div>
+                                            </div>
+
+                                            @if (topic.KernelFunctions.Count == 0)
+                                            {
+                                                <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                                                    No kernel functions selected yet.
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="flex flex-wrap gap-2">
+                                                    @for (var functionIndex = 0; functionIndex < topic.KernelFunctions.Count; functionIndex++)
+                                                    {
+                                                        var functionName = topic.KernelFunctions[functionIndex];
+                                                        var removeTopicIndex = topicIndex;
+                                                        var removeFunctionIndex = functionIndex;
+                                                        <span @key="functionName" class="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-800">
+                                                            <span>@functionName</span>
+                                                            <button type="button"
+                                                                    class="rounded-full px-1 text-cyan-700 hover:bg-cyan-100 hover:text-cyan-900"
+                                                                    title="Remove function from topic"
+                                                                    @onclick="() => RemoveKernelFunction(removeTopicIndex, removeFunctionIndex)">
+                                                                ×
+                                                            </button>
+                                                        </span>
+                                                    }
+                                                </div>
                                             }
                                         </div>
-                                    }
+                                    </div>
                                 </div>
-                            </div>
+                            }
                         </div>
-                    }
-                </div>
-
-                <div class="mt-8">
-                    <div class="mb-5 flex items-center justify-between">
-                        <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Autonomous Agents</h2>
-                        <button type="button" class="rounded-xl bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500"
-                                @onclick="AddAutonomousAgent">
-                            Add Autonomous Agent
-                        </button>
                     </div>
+                }
 
-                    <div class="space-y-5">
-                        @for (var i = 0; i < agent.AutonomousAgents.Count; i++)
-                        {
-                            var autonomousIndex = i;
-                            var autonomousAgent = agent.AutonomousAgents[autonomousIndex];
-                            <div class="rounded-2xl border border-violet-100 bg-violet-50/40 p-5 shadow-sm">
-                                <div class="mb-3 flex items-center justify-between gap-3">
-                                    <h3 class="text-sm font-semibold text-slate-800">Autonomous Agent @(autonomousIndex + 1)</h3>
-                                    <button type="button" class="text-xs font-semibold text-rose-600 hover:text-rose-500"
-                                            @onclick="() => RemoveAutonomousAgent(autonomousIndex)">
-                                        Remove
-                                    </button>
-                                </div>
+                <!-- Autonomous Agent Tab -->
+                @if (ActiveAgentTab == "Autonomous")
+                {
+                    <div class="space-y-6">
+                        <div class="mb-5 flex items-center justify-between">
+                            <h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Autonomous Agents</h2>
+                            <button type="button" class="rounded-xl bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-500"
+                                    @onclick="AddAutonomousAgent">
+                                Add Autonomous Agent
+                            </button>
+                        </div>
 
-                                <div class="grid gap-3 sm:grid-cols-2">
-                                    <label class="block">
-                                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Name</span>
-                                        <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-                                               @bind="autonomousAgent.Name"
-                                               @bind:event="oninput"
-                                               placeholder="Daily Checker" />
-                                    </label>
+                        <div class="space-y-5">
+                            @for (var i = 0; i < agent.AutonomousAgents.Count; i++)
+                            {
+                                var autonomousIndex = i;
+                                var autonomousAgent = agent.AutonomousAgents[autonomousIndex];
+                                <div class="rounded-2xl border border-violet-100 bg-violet-50/40 p-5 shadow-sm">
+                                    <div class="mb-3 flex items-center justify-between gap-3">
+                                        <h3 class="text-sm font-semibold text-slate-800">Autonomous Agent @(autonomousIndex + 1)</h3>
+                                        <button type="button" class="text-xs font-semibold text-rose-600 hover:text-rose-500"
+                                                @onclick="() => RemoveAutonomousAgent(autonomousIndex)">
+                                            Remove
+                                        </button>
+                                    </div>
 
-                                    <label class="block">
-                                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Enabled</span>
-                                        <select class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-                                                @bind="autonomousAgent.Enabled">
-                                            <option value="true">Enabled</option>
-                                            <option value="false">Disabled</option>
-                                        </select>
-                                    </label>
+                                    <div class="grid gap-3 sm:grid-cols-2">
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Name</span>
+                                            <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+                                                   @bind="autonomousAgent.Name"
+                                                   @bind:event="oninput"
+                                                   placeholder="Daily Checker" />
+                                        </label>
 
-                                    <label class="block sm:col-span-2">
-                                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Description</span>
-                                        <textarea class="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-                                                  rows="3"
-                                                  @bind="autonomousAgent.Description"
-                                                  @bind:event="oninput"
-                                                  placeholder="What this autonomous agent should do."></textarea>
-                                    </label>
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Enabled</span>
+                                            <select class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+                                                    @bind="autonomousAgent.Enabled">
+                                                <option value="true">Enabled</option>
+                                                <option value="false">Disabled</option>
+                                            </select>
+                                        </label>
 
-                                    <label class="block">
-                                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Trigger Type</span>
-                                        <select class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-                                                @bind="autonomousAgent.TriggerType">
-                                            <option>Time</option>
-                                            <option>File</option>
-                                            <option>Event</option>
-                                            <option>Manual</option>
-                                        </select>
-                                    </label>
+                                        <label class="block sm:col-span-2">
+                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Description</span>
+                                            <textarea class="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+                                                      rows="3"
+                                                      @bind="autonomousAgent.Description"
+                                                      @bind:event="oninput"
+                                                      placeholder="What this autonomous agent should do."></textarea>
+                                        </label>
 
-                                    <label class="block">
-                                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Trigger Value</span>
-                                        <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Trigger Type</span>
+                                            <select class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+                                                    @bind="autonomousAgent.TriggerType">
+                                                <option>Time</option>
+                                                <option>File</option>
+                                                <option>Event</option>
+                                                <option>Manual</option>
+                                            </select>
+                                        </label>
+
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Trigger Value</span>
+                                            <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
                                                @bind="autonomousAgent.TriggerValue"
                                                @bind:event="oninput"
                                                placeholder="Cron, file path, webhook name, etc." />
-                                    </label>
+                                        </label>
 
-                                    <label class="block">
-                                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Action Type</span>
-                                        <select class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-                                                @bind="autonomousAgent.ActionType">
-                                            <option>RunTopic</option>
-                                            <option>SendMessage</option>
-                                            <option>CallPlugin</option>
-                                            <option>RunWorkflow</option>
-                                        </select>
-                                    </label>
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Action Type</span>
+                                            <select class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+                                                    @bind="autonomousAgent.ActionType">
+                                                <option>RunTopic</option>
+                                                <option>SendMessage</option>
+                                                <option>CallPlugin</option>
+                                                <option>RunWorkflow</option>
+                                            </select>
+                                        </label>
 
-                                    <label class="block">
-                                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Action Value</span>
-                                        <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-                                               @bind="autonomousAgent.ActionValue"
-                                               @bind:event="oninput"
-                                               placeholder="Topic name, plugin.function, or target action" />
-                                    </label>
+                                        <label class="block">
+                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Action Value</span>
+                                            <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+                                                   @bind="autonomousAgent.ActionValue"
+                                                   @bind:event="oninput"
+                                                   placeholder="Topic name, plugin.function, or target action" />
+                                        </label>
 
-                                    <label class="block sm:col-span-2">
-                                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Schedule</span>
-                                        <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-                                               @bind="autonomousAgent.Schedule"
-                                               @bind:event="oninput"
-                                               placeholder="0 9 * * * or every 15 minutes" />
-                                    </label>
+                                        <label class="block sm:col-span-2">
+                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Schedule</span>
+                                            <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+                                                   @bind="autonomousAgent.Schedule"
+                                                   @bind:event="oninput"
+                                                   placeholder="0 9 * * * or every 15 minutes" />
+                                        </label>
 
-                                    <label class="block sm:col-span-2">
-                                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Notes</span>
-                                        <textarea class="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-                                                  rows="2"
-                                                  @bind="autonomousAgent.Notes"
-                                                  @bind:event="oninput"
-                                                  placeholder="Optional notes for runtime scheduling or automation."></textarea>
-                                    </label>
+                                        <label class="block sm:col-span-2">
+                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Notes</span>
+                                            <textarea class="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+                                                      rows="2"
+                                                      @bind="autonomousAgent.Notes"
+                                                      @bind:event="oninput"
+                                                      placeholder="Optional notes for runtime scheduling or automation."></textarea>
+                                        </label>
+                                    </div>
                                 </div>
-                            </div>
-                        }
+                            }
+                        </div>
                     </div>
-                </div>
+                }
+
+                <!-- Summary Agent Tab -->
+                @if (ActiveAgentTab == "Summary")
+                {
+                    <div class="space-y-6">
+                        <label class="mb-4 block">
+                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Summary Agent Name</span>
+                            <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                                   @bind="agent.SummaryAgentName"
+                                   @bind:event="oninput"
+                                   placeholder="e.g. Daily Summary Agent" />
+                        </label>
+
+                        <label class="mb-4 block">
+                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Summary Agent Description</span>
+                            <textarea class="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                                      rows="4"
+                                      @bind="agent.SummaryAgentDescription"
+                                      @bind:event="oninput"
+                                      placeholder="Describe the purpose and scope of this summary agent."></textarea>
+                        </label>
+
+                        <label class="mb-4 block">
+                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Summary Type</span>
+                            <select class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                                    @bind="agent.SummaryType">
+                                <option>Daily</option>
+                                <option>Weekly</option>
+                                <option>Monthly</option>
+                                <option>Custom</option>
+                                <option>Real-time</option>
+                            </select>
+                        </label>
+
+                        <label class="mb-4 block">
+                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Data Sources</span>
+                            <textarea class="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                                      rows="3"
+                                      @bind="agent.SummaryDataSources"
+                                      @bind:event="oninput"
+                                      placeholder="List the topics, plugins, or data sources to summarize (comma-separated)."></textarea>
+                        </label>
+
+                        <label class="mb-4 block">
+                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Summary Template / Prompt</span>
+                            <textarea class="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                                      rows="6"
+                                      @bind="agent.SummaryTemplate"
+                                      @bind:event="oninput"
+                                      placeholder="Define how the summary should be formatted and what insights to highlight."></textarea>
+                        </label>
+
+                        <label class="mb-4 block">
+                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Schedule / Frequency</span>
+                            <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                                   @bind="agent.SummarySchedule"
+                                   @bind:event="oninput"
+                                   placeholder="e.g. 0 9 * * * (9 AM daily) or every 24 hours" />
+                        </label>
+
+                        <label class="mb-4 block">
+                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Output Destination</span>
+                            <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                                   @bind="agent.SummaryOutputDestination"
+                                   @bind:event="oninput"
+                                   placeholder="e.g. Email, Dashboard, File, Webhook URL" />
+                        </label>
+
+                        <label class="mb-4 block">
+                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Enabled</span>
+                            <select class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                                    @bind="agent.SummaryAgentEnabled">
+                                <option value="true">Enabled</option>
+                                <option value="false">Disabled</option>
+                            </select>
+                        </label>
+                    </div>
+                }
             </section>
 
             @if (showJsonPreview)
@@ -448,6 +557,7 @@
     private int? activeTopicIndex;
     private TopicDefinition? selectedTopic;
     private string ActiveFunctionTab { get; set; } = "System";
+    private string ActiveAgentTab { get; set; } = "ChatBot";
 
     private string previewJson => System.Text.Json.JsonSerializer.Serialize(agent, new System.Text.Json.JsonSerializerOptions
     {
@@ -544,6 +654,25 @@
     private void SelectNativeTab() => SelectFunctionTab("Native");
 
     private void SelectPromptTab() => SelectFunctionTab("Prompt");
+
+    private void SelectChatBotTab() => SelectAgentTab("ChatBot");
+
+    private void SelectAutonomousTab() => SelectAgentTab("Autonomous");
+
+    private void SelectSummaryTab() => SelectAgentTab("Summary");
+
+    private void SelectAgentTab(string tabName)
+    {
+        ActiveAgentTab = tabName;
+    }
+
+    private string GetAgentTabButtonClass(string tabName)
+    {
+        var active = ActiveAgentTab == tabName;
+        return active
+            ? "rounded-t-xl border border-b-0 border-slate-200 bg-cyan-600 px-4 py-3 text-sm font-semibold text-white"
+            : "rounded-t-xl border border-b-0 border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-200";
+    }
 
     private string GetTabButtonClass(string tabName)
     {

@@ -36,6 +36,11 @@ builder.Services.AddSingleton<AgentDefinitionLoader>();
 var knowledgeDbPath = Path.Combine(AppContext.BaseDirectory, "App_Data", "knowledge-base", "vectors.db");
 Directory.CreateDirectory(Path.GetDirectoryName(knowledgeDbPath)!);
 
+// Previous sessions DB (simple SQLite store)
+var sessionsDbPath = Path.Combine(AppContext.BaseDirectory, "App_Data", "sessions.db");
+Directory.CreateDirectory(Path.GetDirectoryName(sessionsDbPath)!);
+builder.Services.AddSingleton<IPreviousSessionService>(sp => new SqlitePreviousSessionService(sessionsDbPath));
+
 if (documentMemoryProvider == "kernelmemory")
 {
     // Kernel Memory 0.35 currently conflicts with the Azure.AI.OpenAI version

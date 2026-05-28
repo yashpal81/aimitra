@@ -33,7 +33,14 @@ window.aimitraChat = (function () {
 
             connection.on('ReceiveMessage', function (user, message) {
                 if (dotNetRef) {
-                    dotNetRef.invokeMethodAsync('ReceiveMessage', user, message);
+                    const args = Array.prototype.slice.call(arguments);
+                    dotNetRef.invokeMethodAsync(
+                        'ReceiveMessage',
+                        user,
+                        message,
+                        args.length > 2 ? args[2] : null,
+                        args.length > 3 ? args[3] : false
+                    );
                 }
             });
 
@@ -57,7 +64,7 @@ window.aimitraChat = (function () {
         sendMessage: function (user, message) {
             if (connection) {
                 if (dotNetRef) {
-                    dotNetRef.invokeMethodAsync('ReceiveMessage', user, message);
+                    dotNetRef.invokeMethodAsync('ReceiveMessage', user, message, null, false);
                 }
                 connection.invoke('SendMessage', user, message).catch(function (err) {
                     console.error(err.toString());

@@ -19,6 +19,16 @@ namespace Aimitra.WebChat.Models
         public string WelcomeMessage { get; set; } = string.Empty;
         public List<TopicDefinition> Topics { get; set; } = new();
         public List<AutonomousAgentDefinition> AutonomousAgents { get; set; } = new();
+
+        // Summary Agent Properties
+        public string SummaryAgentName { get; set; } = string.Empty;
+        public string SummaryAgentDescription { get; set; } = string.Empty;
+        public string SummaryType { get; set; } = "Daily";
+        public string SummaryDataSources { get; set; } = string.Empty;
+        public string SummaryTemplate { get; set; } = string.Empty;
+        public string SummarySchedule { get; set; } = "0 9 * * *";
+        public string SummaryOutputDestination { get; set; } = string.Empty;
+        public bool SummaryAgentEnabled { get; set; } = true;
     }
 
     public class TopicDefinition

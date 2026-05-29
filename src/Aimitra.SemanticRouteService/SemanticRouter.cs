@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Aimitra.SemanticRouteService.Models;
-using Microsoft.SemanticKernel.Embeddings;
 
+#pragma warning disable SKEXP0001
+using Microsoft.SemanticKernel.Embeddings;
+#pragma warning restore SKEXP0001
 namespace Aimitra.SemanticRouteService
 {
     public class SemanticRouter

@@ -33,7 +33,7 @@
         <div class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-200/60">
             <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-500 via-sky-500 to-indigo-500"></div>
             <div class="grid gap-0 lg:grid-cols-[1.35fr_0.85fr]">
-                <section class="border-b border-slate-200 p-6 lg:border-b-0 lg:border-r">
+                <section class="border-b border-slate-200 p-6 min-w-0 lg:border-b-0 lg:border-r">
                     <div class="mb-6 flex items-start justify-between gap-4">
                         <div>
                             <p class="text-sm font-medium uppercase tracking-[0.25em] text-cyan-700">Aimitra WebChat</p>
@@ -48,12 +48,12 @@
                         </div>
                     </div>
 
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50">
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden">
                         <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                             <span class="text-sm font-medium text-slate-700">Conversation</span>
                             <span class="text-xs text-slate-500">Secure routed session</span>
                         </div>
-                        <div class="messages max-h-[28rem] space-y-3 overflow-y-auto p-4">
+                        <div class="messages w-full min-w-0 max-h-[28rem] space-y-3 overflow-y-auto overflow-x-hidden p-4">
                             @if (messages.Count == 0)
                             {
                                 <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
@@ -64,10 +64,11 @@
                             {
                                 @foreach (var m in messages)
                                 {
-                                    <div class="flex @(m.User == "Aimitra" ? "justify-start" : "justify-end")">
-                                        <div class="max-w-[80%] rounded-2xl px-4 py-3 shadow-sm @(m.User == "Aimitra" ? "border border-cyan-100 bg-cyan-50 text-slate-900" : "border border-slate-200 bg-white text-slate-900")">
+                                    <div class="flex min-w-0 w-full @(m.User == "Aimitra" ? "justify-start" : "justify-end")">
+                                        <div class="max-w-[70%] w-full rounded-2xl px-4 py-3 shadow-sm break-words whitespace-normal overflow-hidden @(m.User == "Aimitra" ? "border border-cyan-100 bg-cyan-50 text-slate-900" : "border border-slate-200 bg-white text-slate-900")">
                                             <div class="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] @(m.User == "Aimitra" ? "text-cyan-700" : "text-slate-500")">
                                                 @m.User
+
                                             </div>
                                             <div class="text-sm leading-6">@((MarkupString)RenderMarkdown(m.Text))</div>
                                         </div>

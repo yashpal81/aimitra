@@ -275,7 +275,8 @@ Console.WriteLine("Kernel function options:");
                 ["MathPlugin"] = KernelPluginFactory.CreateFromObject(new MathPlugin(), "MathPlugin"),
                 ["FileIOPlugin"] = KernelPluginFactory.CreateFromObject(new FileIOPlugin(), "FileIOPlugin"),
                 ["HttpPlugin"] = KernelPluginFactory.CreateFromObject(new HttpPlugin(), "HttpPlugin"),
-                ["WaitPlugin"] = KernelPluginFactory.CreateFromObject(new WaitPlugin(), "WaitPlugin")
+                ["WaitPlugin"] = KernelPluginFactory.CreateFromObject(new WaitPlugin(), "WaitPlugin"),
+                ["GoogleDrivePlugin"] = KernelPluginFactory.CreateFromObject(new Aimitra.SamplePlugins.Plugins.GoogleDrivePlugin(), "GoogleDrivePlugin")
             };
 
             return pluginCatalog;
@@ -299,7 +300,8 @@ Console.WriteLine("Kernel function options:");
                 ["MathPlugin"] = new MathPlugin(),
                 ["FileIOPlugin"] = new FileIOPlugin(),
                 ["HttpPlugin"] = new HttpPlugin(),
-                ["WaitPlugin"] = new WaitPlugin()
+                ["WaitPlugin"] = new WaitPlugin(),
+                ["GoogleDrivePlugin"] = new Aimitra.SamplePlugins.Plugins.GoogleDrivePlugin()
             };
         }
 

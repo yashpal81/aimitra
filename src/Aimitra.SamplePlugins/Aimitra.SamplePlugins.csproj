@@ -10,6 +10,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.21.0" />
+
+    <!-- Usually included automatically via the Google Drive package -->
+  <PackageReference Include="Google.Apis.Drive.v3" Version="1.68.0" />
+  
+  <!-- Or explicitly targeted if you only need utility abstractions -->
+  <PackageReference Include="Google.Apis.Core" Version="1.68.0" />
   </ItemGroup>
 
 </Project>

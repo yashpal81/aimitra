@@ -115,6 +115,41 @@ app.Use(async (context, next) =>
 app.UseStaticFiles();
 app.UseRouting();
 
+app.MapGet("/google-drive/callback", async (HttpContext context) =>
+{
+    var code = context.Request.Query["code"].ToString();
+    var error = context.Request.Query["error"].ToString();
+
+    if (!string.IsNullOrWhiteSpace(error))
+    {
+        context.Response.ContentType = "text/html; charset=utf-8";
+        await context.Response.WriteAsync($"<h1>Google Drive OAuth error</h1><p>{System.Net.WebUtility.HtmlEncode(error)}</p>");
+        return;
+    }
+
+    if (string.IsNullOrWhiteSpace(code))
+    {
+        context.Response.ContentType = "text/html; charset=utf-8";
+        await context.Response.WriteAsync("<h1>Google Drive OAuth callback</h1><p>No authorization code was returned.</p>");
+        return;
+    }
+
+    try
+    {
+        var redirectUri = $"{context.Request.Scheme}://{context.Request.Host}/google-drive/callback";
+        var plugin = new Aimitra.SamplePlugins.Plugins.GoogleDrivePlugin();
+        var result = await plugin.CompleteGoogleDriveOAuth(code, redirectUri).ConfigureAwait(false);
+
+        context.Response.ContentType = "text/html; charset=utf-8";
+        await context.Response.WriteAsync($"<h1>Google Drive OAuth completed</h1><p>{System.Net.WebUtility.HtmlEncode(result)}</p>");
+    }
+    catch (Exception ex)
+    {
+        context.Response.ContentType = "text/html; charset=utf-8";
+        await context.Response.WriteAsync($"<h1>Google Drive OAuth failed</h1><pre>{System.Net.WebUtility.HtmlEncode(ex.Message)}</pre>");
+    }
+});
+
 app.MapBlazorHub();
 app.MapHub<ChatHub>("/chathub");
 app.MapFallbackToPage("/_Host");

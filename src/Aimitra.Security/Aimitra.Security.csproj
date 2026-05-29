@@ -4,9 +4,12 @@
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.21.0-alpha" />
 </ItemGroup>
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
+    <NoWarn>$(NoWarn);SKEXP0001;SKEXP0050;SKEXP0010;SKEXP0070</NoWarn>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
 </Project>
+
+

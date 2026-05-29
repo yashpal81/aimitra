@@ -1,0 +1,16 @@
+{
+  "Name": "File Assistant ",
+  "Active": true,
+  "Description": "You are a file assistant capable of reading and writing a file.",
+  "WelcomeMessage": "",
+  "Topics": [
+    {
+      "Name": "File read write topic",
+      "Description": "Your job is to read and write a file",
+      "KernelFunctions": [
+        "FileIOPlugin.ReadAsync",
+        "FileIOPlugin.WriteAsync"
+      ]
+    }
+  ]
+}

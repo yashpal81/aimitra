@@ -18,6 +18,17 @@ namespace Aimitra.WebChat.Models
         public string Description { get; set; } = string.Empty;
         public string WelcomeMessage { get; set; } = string.Empty;
         public List<TopicDefinition> Topics { get; set; } = new();
+        public List<AutonomousAgentDefinition> AutonomousAgents { get; set; } = new();
+
+        // Summary Agent Properties
+        public string SummaryAgentName { get; set; } = string.Empty;
+        public string SummaryAgentDescription { get; set; } = string.Empty;
+        public string SummaryType { get; set; } = "Daily";
+        public string SummaryDataSources { get; set; } = string.Empty;
+        public string SummaryTemplate { get; set; } = string.Empty;
+        public string SummarySchedule { get; set; } = "0 9 * * *";
+        public string SummaryOutputDestination { get; set; } = string.Empty;
+        public bool SummaryAgentEnabled { get; set; } = true;
     }
 
     public class TopicDefinition
@@ -25,5 +36,18 @@ namespace Aimitra.WebChat.Models
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public List<string> KernelFunctions { get; set; } = new();
+    }
+
+    public class AutonomousAgentDefinition
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public bool Enabled { get; set; } = true;
+        public string TriggerType { get; set; } = "Time";
+        public string TriggerValue { get; set; } = string.Empty;
+        public string ActionType { get; set; } = "RunTopic";
+        public string ActionValue { get; set; } = string.Empty;
+        public string Schedule { get; set; } = string.Empty;
+        public string Notes { get; set; } = string.Empty;
     }
 }

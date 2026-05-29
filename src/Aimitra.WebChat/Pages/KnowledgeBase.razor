@@ -10,21 +10,13 @@
                 <section class="border-b border-slate-200 p-6 lg:border-b-0 lg:border-r">
                     <div class="mb-6">
                         <p class="text-sm font-medium uppercase tracking-[0.25em] text-amber-700">Aimitra Knowledge Base</p>
-                        <h3 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Upload, embed, and query documents</h3>
+                        <h3 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Collections and files</h3>
                         <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                            Build a collection from files or pasted text, then ask questions against that collection in chat.
+                            On load, this view shows the available collections and the files inside the selected collection.
                         </p>
                     </div>
 
                     <div class="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                        <label class="block">
-                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Collection</span>
-                            <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                                   @bind="collectionName"
-                                   @bind:event="oninput"
-                                   placeholder="meeting-kb" />
-                        </label>
-
                         <div class="flex flex-wrap gap-2">
                             <button type="button"
                                     class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100"
@@ -34,37 +26,14 @@
                             <button type="button"
                                     class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
                                     @onclick="LoadDocuments">
-                                Refresh documents
+                                Refresh files
+                            </button>
+                            <button type="button"
+                                    class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                                    @onclick="LoadCollections">
+                                Refresh collections
                             </button>
                         </div>
-
-                        <label class="block">
-                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Document upload</span>
-                            <InputFile OnChange="OnFileSelected" />
-                        </label>
-
-                        <button type="button"
-                                class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-amber-200 transition hover:from-amber-500 hover:to-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
-                                @onclick="ImportSelectedFile"
-                                disabled="@(!CanImportFile)">
-                            Import Document
-                        </button>
-
-                        <label class="block">
-                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Paste text</span>
-                            <textarea class="w-full resize-none rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                                      rows="8"
-                                      @bind="pastedText"
-                                      @bind:event="oninput"
-                                      placeholder="Paste notes, policy text, meeting minutes, or any content to embed."></textarea>
-                        </label>
-
-                        <button type="button"
-                                class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-200 transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-                                @onclick="ImportPastedText"
-                                disabled="@string.IsNullOrWhiteSpace(pastedText)">
-                            Import Text
-                        </button>
 
                         @if (!string.IsNullOrWhiteSpace(status))
                         {
@@ -72,125 +41,264 @@
                                 @status
                             </div>
                         }
+
+                        <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-600">
+                            Click <span class="font-semibold text-slate-900">Manage Collection</span> in the sidebar to create a new collection, add named text, or upload files.
+                        </div>
                     </div>
                 </section>
 
                 <aside class="space-y-6 bg-slate-50 p-6">
                     <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Ask</p>
-                        <div class="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-                            Querying collection: <span class="font-semibold text-slate-900">@collectionName</span>
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Current Collection</p>
+                        <div class="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                            @collectionName
                         </div>
-                        <label class="mt-3 block">
-                            <span class="mb-2 block text-xs font-medium text-slate-500">Question</span>
-                            <textarea class="w-full resize-none rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                                      rows="5"
-                                      @bind="question"
-                                      @bind:event="oninput"
-                                      placeholder="Ask a question about the documents in the collection."></textarea>
-                        </label>
-
-                        <button type="button"
-                                class="mt-4 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-rose-600 to-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-200 transition hover:from-rose-500 hover:to-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
-                                @onclick="AskKnowledgeBase"
-                                disabled="@string.IsNullOrWhiteSpace(question)">
-                            Ask Knowledge Base
-                        </button>
-                    </div>
-
-                    <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Results</p>
-                        @if (matches.Count == 0)
-                        {
-                            <div class="mt-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                                No matches yet.
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="mt-3 space-y-3">
-                                @foreach (var match in matches)
-                                {
-                                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                        <div class="flex items-center justify-between gap-3">
-                                            <div class="text-sm font-semibold text-slate-900">@match.Title</div>
-                                            @if (match.Score is not null)
-                                            {
-                                                <div class="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white">
-                                                    @match.Score
-                                                </div>
-                                            }
-                                        </div>
-                                        <div class="mt-1 text-xs text-slate-500">@match.Source</div>
-                                        <div class="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">@match.Snippet</div>
-                                    </div>
-                                }
-                            </div>
-                        }
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <button type="button"
+                                    class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                                    @onclick="LoadDocuments">
+                                Reload files
+                            </button>
+                            <button type="button"
+                                    class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                                    @onclick="LoadCollections">
+                                Reload collections
+                            </button>
+                            <button type="button"
+                                    class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+                                    @onclick="ToggleManagePanel">
+                                @(showManagePanel ? "Close manage" : "Manage Collection")
+                            </button>
+                        </div>
                     </div>
 
                     <div class="rounded-2xl border border-slate-200 bg-white p-5">
                         <div class="flex items-center justify-between gap-3">
-                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Documents</p>
-                            <span class="text-xs text-slate-500">@documents.Count total</span>
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Current Collection</p>
+                                <div class="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900">
+                                    @collectionName
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button"
+                                        class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                                        @onclick="LoadDocuments">
+                                    Reload files
+                                </button>
+                                <button type="button"
+                                        class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+                                        @onclick="ToggleManagePanel">
+                                    @(showManagePanel ? "Close manage" : "Manage Collection")
+                                </button>
+                            </div>
                         </div>
 
-                        @if (documents.Count == 0)
-                        {
-                            <div class="mt-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                                No documents in this collection yet.
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="mt-3 space-y-3">
-                                @foreach (var doc in documents)
-                                {
-                                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                        <div class="flex items-center justify-between gap-3">
-                                            <div>
-                                                <div class="text-sm font-semibold text-slate-900">@doc.Title</div>
-                                                <div class="text-xs text-slate-500">@doc.FileName</div>
-                                            </div>
-                                            <div class="flex gap-2">
-                                                <button type="button"
-                                                        class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                                                        @onclick="() => ReindexDocument(doc.Id)">
-                                                    Reindex
-                                                </button>
-                                                <button type="button"
-                                                        class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100"
-                                                        @onclick="() => DeleteDocument(doc.Id)">
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div class="mt-2 text-xs text-slate-500">
-                                            Imported: @doc.ImportedAtUtc.UtcDateTime.ToString("u")
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-                        }
+                        <div class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                            <table class="min-w-full divide-y divide-slate-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Collection</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">File</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Imported</th>
+                                        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    @if (documents.Count == 0)
+                                    {
+                                        <tr>
+                                            <td colspan="4" class="px-4 py-8 text-center text-sm text-slate-500">
+                                                No files in this collection yet.
+                                            </td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var doc in documents)
+                                        {
+                                            <tr class="hover:bg-slate-50">
+                                                <td class="px-4 py-3 text-sm text-slate-700">@doc.Collection</td>
+                                                <td class="px-4 py-3">
+                                                    <div class="text-sm font-semibold text-slate-900">@doc.Title</div>
+                                                    <div class="text-xs text-slate-500">@doc.FileName</div>
+                                                </td>
+                                                <td class="px-4 py-3 text-sm text-slate-700">@doc.ImportedAtUtc.UtcDateTime.ToString("u")</td>
+                                                <td class="px-4 py-3">
+                                                    <div class="flex justify-end gap-2">
+                                                        <button type="button"
+                                                                class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                                                                @onclick="() => ReindexDocument(doc.Id)">
+                                                            Reindex
+                                                        </button>
+                                                        <button type="button"
+                                                                class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                                                                @onclick="() => DeleteDocument(doc.Id)">
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
+
                 </aside>
             </div>
         </div>
     </div>
 </div>
 
+@if (showManagePanel)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-6">
+        <div class="w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Manage Collection</p>
+                    <h3 class="mt-1 text-lg font-semibold text-slate-900">Create, edit, and add files</h3>
+                </div>
+                <button type="button"
+                        class="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                        @onclick="ToggleManagePanel">
+                    Close
+                </button>
+            </div>
+
+            <div class="grid gap-0 lg:grid-cols-[1fr_1fr]">
+                <div class="border-b border-slate-200 p-6 lg:border-b-0 lg:border-r">
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Current Collection</p>
+                    <div class="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900">
+                        @collectionName
+                    </div>
+
+                    <div class="mt-4">
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Available Collections</p>
+                        @if (availableCollections.Count == 0)
+                        {
+                            <div class="mt-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                                No collections found yet.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                @foreach (var collection in availableCollections)
+                                {
+                                    <button type="button"
+                                            class="@GetCollectionPillClass(collection)"
+                                            @onclick="() => SelectCollection(collection)">
+                                        @collection
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mt-5">
+                        <div class="flex items-center justify-between gap-3">
+                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Files in Collection</p>
+                            <span class="text-xs text-slate-500">@documents.Count total</span>
+                        </div>
+
+                        @if (documents.Count == 0)
+                        {
+                            <div class="mt-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                                No files in this collection yet.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mt-3 space-y-2">
+                                @foreach (var doc in documents)
+                                {
+                                    <div class="rounded-2xl border border-slate-200 bg-white p-3">
+                                        <div class="text-sm font-semibold text-slate-900">@doc.Title</div>
+                                        <div class="text-xs text-slate-500">@doc.FileName</div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="space-y-4 p-6">
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Create or switch collection</span>
+                        <input class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                               @bind="collectionName"
+                               @bind:event="oninput"
+                               placeholder="meeting-kb" />
+                    </label>
+
+                    <button type="button"
+                            class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-500"
+                            @onclick="CreateNewCollection">
+                        Create / Select Collection
+                    </button>
+
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Document upload</span>
+                        <InputFile OnChange="OnFileSelected" />
+                    </label>
+
+                    <button type="button"
+                            class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-amber-200 transition hover:from-amber-500 hover:to-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
+                            @onclick="ImportSelectedFile"
+                            disabled="@(!CanImportFile)">
+                        Add File
+                    </button>
+
+                    <label class="block">
+                        <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Add named text to collection</span>
+                        <input class="mb-3 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                               @bind="textItemName"
+                               @bind:event="oninput"
+                               placeholder="e.g. Policy summary" />
+                        <textarea class="w-full resize-none rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                                  rows="6"
+                                  @bind="namedTextContent"
+                                  @bind:event="oninput"
+                                  placeholder="Paste the text you want to save into the collection with this name."></textarea>
+                    </label>
+
+                    <button type="button"
+                            class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-200 transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            @onclick="ImportNamedText"
+                            disabled="@string.IsNullOrWhiteSpace(namedTextContent)">
+                        Add Named Text
+                    </button>
+
+                    <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                        Use this panel to switch collections, create one, or add more files and named text.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private string collectionName = "aimitra";
     private string question = string.Empty;
     private string pastedText = string.Empty;
+    private string textItemName = string.Empty;
+    private string namedTextContent = string.Empty;
     private string status = string.Empty;
+    private bool showManagePanel;
     private IReadOnlyList<Aimitra.WebChat.Services.DocumentMemoryMatch> matches = Array.Empty<Aimitra.WebChat.Services.DocumentMemoryMatch>();
     private IReadOnlyList<Aimitra.WebChat.Services.DocumentMemoryEntry> documents = Array.Empty<Aimitra.WebChat.Services.DocumentMemoryEntry>();
+    private IReadOnlyList<string> availableCollections = Array.Empty<string>();
     private IBrowserFile? selectedFile;
 
     protected override async Task OnInitializedAsync()
     {
-        collectionName = DocumentMemory.GetLastCollection();
+        await LoadCollections();
+        await EnsureCollectionWithDocumentsAsync();
         await LoadDocuments();
     }
 
@@ -241,6 +349,19 @@
         DocumentMemory.SetLastCollection(collection);
         status = $"Imported pasted text into collection '{collection}'.";
         await LoadDocuments();
+        await LoadCollections();
+    }
+
+    private async Task ImportNamedText()
+    {
+        var title = string.IsNullOrWhiteSpace(textItemName) ? "named-text" : textItemName.Trim();
+        var collection = await DocumentMemory.ImportTextAsync(title, namedTextContent, collectionName);
+        collectionName = collection;
+        DocumentMemory.SetLastCollection(collection);
+        status = $"Added '{title}' into collection '{collection}'.";
+        namedTextContent = string.Empty;
+        await LoadDocuments();
+        await LoadCollections();
     }
 
     private async Task AskKnowledgeBase()
@@ -264,9 +385,87 @@
         _ = LoadDocuments();
     }
 
+    private async Task CreateNewCollection()
+    {
+        if (string.IsNullOrWhiteSpace(collectionName))
+        {
+            collectionName = "new-collection";
+        }
+
+        collectionName = collectionName.Trim();
+        DocumentMemory.SetLastCollection(collectionName);
+        status = $"Created/selected collection '{collectionName}'. Add files or text to populate it.";
+        await LoadDocuments();
+        await LoadCollections();
+    }
+
+    private void ToggleManagePanel()
+    {
+        showManagePanel = !showManagePanel;
+    }
+
     private async Task LoadDocuments()
     {
         documents = await DocumentMemory.ListDocumentsAsync(collectionName);
+    }
+
+    private async Task LoadCollections()
+    {
+        availableCollections = await DocumentMemory.ListCollectionsAsync();
+        await EnsureCollectionWithDocumentsAsync();
+    }
+
+    private void SelectCollection(string collection)
+    {
+        collectionName = collection;
+        status = $"Selected collection '{collectionName}'.";
+        _ = LoadDocuments();
+    }
+
+    private async Task EnsureCollectionWithDocumentsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(collectionName))
+        {
+            collectionName = DocumentMemory.GetLastCollection();
+        }
+
+        if (!string.IsNullOrWhiteSpace(collectionName))
+        {
+            var currentDocuments = await DocumentMemory.ListDocumentsAsync(collectionName);
+            if (currentDocuments.Count > 0)
+            {
+                DocumentMemory.SetLastCollection(collectionName);
+                return;
+            }
+        }
+
+        foreach (var collection in availableCollections)
+        {
+            var docs = await DocumentMemory.ListDocumentsAsync(collection);
+            if (docs.Count == 0)
+            {
+                continue;
+            }
+
+            collectionName = collection;
+            DocumentMemory.SetLastCollection(collectionName);
+            documents = docs;
+            return;
+        }
+
+        if (availableCollections.Count > 0)
+        {
+            collectionName = availableCollections[0];
+            DocumentMemory.SetLastCollection(collectionName);
+        }
+    }
+
+    private string GetCollectionPillClass(string collection)
+    {
+        var active = string.Equals(collectionName, collection, StringComparison.OrdinalIgnoreCase);
+        return active
+            ? "rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
+            : "rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200";
     }
 
     private async Task DeleteDocument(string documentId)
@@ -274,6 +473,7 @@
         await DocumentMemory.DeleteDocumentAsync(documentId, collectionName);
         status = $"Deleted document '{documentId}' from '{collectionName}'.";
         await LoadDocuments();
+        await LoadCollections();
     }
 
     private async Task ReindexDocument(string documentId)

@@ -1,9 +1,11 @@
 @page "/chat"
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components.Forms
+@using Markdig
 @inject Aimitra.WebChat.Services.IDocumentMemoryService DocumentMemory
 @inject Aimitra.WebChat.Services.AgentDefinitionLoader AgentDefinitions
 @inject IJSRuntime JS
+@inject Aimitra.WebChat.Services.IPreviousSessionService PreviousSessionService
 
 <style>
     @@keyframes dotPulse {
@@ -31,7 +33,7 @@
         <div class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-200/60">
             <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-500 via-sky-500 to-indigo-500"></div>
             <div class="grid gap-0 lg:grid-cols-[1.35fr_0.85fr]">
-                <section class="border-b border-slate-200 p-6 lg:border-b-0 lg:border-r">
+                <section class="border-b border-slate-200 p-6 min-w-0 lg:border-b-0 lg:border-r">
                     <div class="mb-6 flex items-start justify-between gap-4">
                         <div>
                             <p class="text-sm font-medium uppercase tracking-[0.25em] text-cyan-700">Aimitra WebChat</p>
@@ -46,12 +48,12 @@
                         </div>
                     </div>
 
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50">
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden">
                         <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                             <span class="text-sm font-medium text-slate-700">Conversation</span>
                             <span class="text-xs text-slate-500">Secure routed session</span>
                         </div>
-                        <div class="messages max-h-[28rem] space-y-3 overflow-y-auto p-4">
+                        <div class="messages w-full min-w-0 max-h-[28rem] space-y-3 overflow-y-auto overflow-x-hidden p-4">
                             @if (messages.Count == 0)
                             {
                                 <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-500">
@@ -62,12 +64,13 @@
                             {
                                 @foreach (var m in messages)
                                 {
-                                    <div class="flex @(m.User == "Aimitra" ? "justify-start" : "justify-end")">
-                                        <div class="max-w-[80%] rounded-2xl px-4 py-3 shadow-sm @(m.User == "Aimitra" ? "border border-cyan-100 bg-cyan-50 text-slate-900" : "border border-slate-200 bg-white text-slate-900")">
+                                    <div class="flex min-w-0 w-full @(m.User == "Aimitra" ? "justify-start" : "justify-end")">
+                                        <div class="max-w-[70%] w-full rounded-2xl px-4 py-3 shadow-sm break-words whitespace-normal overflow-hidden @(m.User == "Aimitra" ? "border border-cyan-100 bg-cyan-50 text-slate-900" : "border border-slate-200 bg-white text-slate-900")">
                                             <div class="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] @(m.User == "Aimitra" ? "text-cyan-700" : "text-slate-500")">
                                                 @m.User
+
                                             </div>
-                                            <div class="whitespace-pre-wrap text-sm leading-6">@m.Text</div>
+                                            <div class="text-sm leading-6">@((MarkupString)RenderMarkdown(m.Text))</div>
                                         </div>
                                     </div>
                                 }
@@ -90,6 +93,34 @@
                                     </div>
                                 </div>
                             }
+                        </div>
+                    </div>
+                    <div class="mt-4 px-6">
+                        <div class="rounded-[28px] border border-slate-200 bg-white p-2 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+                            <div class="flex items-end gap-2 rounded-[24px] bg-slate-50 px-3 py-2 ring-1 ring-inset ring-slate-200 focus-within:ring-cyan-500/40">
+                                <label class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                                    <span class="text-xl leading-none">+</span>
+                                </label>
+
+                                <textarea placeholder="Message Aimitra"
+                                          @bind="currentMessage"
+                                          @bind:event="oninput"
+                                          rows="1"
+                                          class="min-h-[2.75rem] flex-1 resize-none bg-transparent px-1 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                                          @onkeyup="OnMessageKeyUp"></textarea>
+
+                                <button type="button"
+                                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+                                        title="Voice input (coming soon)">
+                                    <span class="text-lg leading-none">🎤</span>
+                                </button>
+
+                                <button @onclick="Send"
+                                        disabled="@(isThinking || string.IsNullOrWhiteSpace(currentMessage))"
+                                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-md shadow-blue-200 transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40">
+                                    <span class="text-lg leading-none">↑</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -130,31 +161,30 @@
                                 </div>
                             </div>
 
-                            <div class="rounded-[28px] border border-slate-200 bg-white p-2 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
-                                <div class="flex items-end gap-2 rounded-[24px] bg-slate-50 px-3 py-2 ring-1 ring-inset ring-slate-200 focus-within:ring-cyan-500/40">
-                                    <label class="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900">
-                                        <span class="text-xl leading-none">+</span>
-                                        <InputFile OnChange="OnFileSelected" class="hidden" />
-                                    </label>
+                            <div class="rounded-2xl border border-slate-200 bg-white p-3">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Previous Sessions</p>
+                                    <div class="flex gap-2">
+                                        <button class="text-xs text-slate-500 hover:text-slate-700" @onclick="LoadRecentSessions">Refresh</button>
+                                        <button class="text-xs text-slate-500 hover:text-slate-700" @onclick="StartNewSession">Start New Session</button>
+                                    </div>
+                                </div>
 
-                                    <textarea placeholder="Message Aimitra"
-                                              @bind="currentMessage"
-                                              @bind:event="oninput"
-                                              rows="1"
-                                              class="min-h-[2.75rem] flex-1 resize-none bg-transparent px-1 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400"
-                                              @onkeyup="OnMessageKeyUp"></textarea>
-
-                                    <button type="button"
-                                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
-                                            title="Voice input (coming soon)">
-                                        <span class="text-lg leading-none">🎤</span>
-                                    </button>
-
-                                    <button @onclick="Send"
-                                            disabled="@(isThinking || string.IsNullOrWhiteSpace(currentMessage))"
-                                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-md shadow-blue-200 transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40">
-                                        <span class="text-lg leading-none">↑</span>
-                                    </button>
+                                <div class="mt-3 space-y-2">
+                                    @if (previousSessions.Count == 0)
+                                    {
+                                        <div class="text-sm text-slate-500">No previous sessions found.</div>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var s in previousSessions)
+                                        {
+                                            <div class="flex items-center justify-between">
+                                                <div class="text-sm text-slate-700">@s</div>
+                                                <button class="text-xs rounded px-2 py-1 bg-slate-100 text-slate-700 hover:bg-slate-200" @onclick="() => LoadSession(s)">Load</button>
+                                            </div>
+                                        }
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -175,7 +205,7 @@
 </div>
 
 @code {
-	private List<MessageEntry> messages = new();
+    private List<MessageEntry> messages = new();
 	private string user = "User";
 	private string currentMessage = string.Empty;
     private string collectionName = string.Empty;
@@ -183,7 +213,12 @@
 	private bool isThinking;
 	private DotNetObjectReference<Chat>? objRef;
     private IBrowserFile? selectedFile;
-    private string welcomeMessage = string.Empty;
+    private List<string> previousSessions = new();
+	private string welcomeMessage = string.Empty;
+    private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .DisableHtml()
+        .Build();
 
     protected override Task OnInitializedAsync()
     {
@@ -195,24 +230,156 @@
 	{
 		if (firstRender)
 		{
-            collectionName = await JS.InvokeAsync<string>("aimitraChat.getOrCreateSessionCollection", "chat");
-            DocumentMemory.SetLastCollection(collectionName);
-			objRef = DotNetObjectReference.Create(this);
-			await JS.InvokeVoidAsync("aimitraChat.start", objRef, collectionName);
+            // create the dotnet reference first
+            objRef = DotNetObjectReference.Create(this);
+
+            // Prefer loading the last session recorded in the DB. If none, fall back to JS-created collection.
+            var last = await PreviousSessionService.GetLastSessionNameAsync();
+            if (!string.IsNullOrWhiteSpace(last))
+            {
+                collectionName = last!;
+                DocumentMemory.SetLastCollection(collectionName);
+                // load messages from storage
+                var persisted = await PreviousSessionService.GetSessionMessagesAsync(collectionName);
+                messages.Clear();
+                foreach (var p in persisted)
+                {
+                    if (p.User == "Aimitra" && p.IsPartial &&
+                        string.Equals(p.Text?.Trim(), "Thinking...", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    messages.Add(new MessageEntry
+                    {
+                        Id = string.IsNullOrWhiteSpace(p.MessageId) ? Guid.NewGuid().ToString("N") : p.MessageId,
+                        User = p.User,
+                        Text = p.Text,
+                        IsPartial = p.IsPartial
+                    });
+                }
+            }
+            else
+            {
+                collectionName = await JS.InvokeAsync<string>("aimitraChat.getOrCreateSessionCollection", "chat");
+                DocumentMemory.SetLastCollection(collectionName);
+            }
+
+            // start JS with the chosen collection and record session
+            await JS.InvokeVoidAsync("aimitraChat.start", objRef, collectionName);
+
+            await PreviousSessionService.AddOrUpdateSessionAsync(collectionName);
+            previousSessions = await PreviousSessionService.GetRecentSessionsAsync();
+            StateHasChanged();
 		}
 	}
 
+    private async Task LoadRecentSessions()
+    {
+        previousSessions = await PreviousSessionService.GetRecentSessionsAsync();
+        StateHasChanged();
+    }
+
+    private async Task StartNewSession()
+    {
+        // generate a fresh session name and start it
+        collectionName = $"session_{Guid.NewGuid():N}";
+        DocumentMemory.SetLastCollection(collectionName);
+        messages.Clear();
+        status = $"Started new session {collectionName}";
+        await PreviousSessionService.AddOrUpdateSessionAsync(collectionName);
+        if (objRef is not null)
+        {
+            await JS.InvokeVoidAsync("aimitraChat.start", objRef, collectionName);
+        }
+        previousSessions = await PreviousSessionService.GetRecentSessionsAsync();
+        StateHasChanged();
+    }
+
+    private async Task LoadSession(string col)
+    {
+        if (string.IsNullOrWhiteSpace(col)) return;
+        collectionName = col;
+        DocumentMemory.SetLastCollection(collectionName);
+        messages.Clear();
+        status = $"Loaded session {collectionName}";
+        // load persisted messages
+        var persisted = await PreviousSessionService.GetSessionMessagesAsync(collectionName);
+        foreach (var p in persisted)
+        {
+            if (p.User == "Aimitra" && p.IsPartial &&
+                string.Equals(p.Text?.Trim(), "Thinking...", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            messages.Add(new MessageEntry
+            {
+                Id = string.IsNullOrWhiteSpace(p.MessageId) ? Guid.NewGuid().ToString("N") : p.MessageId,
+                User = p.User,
+                Text = p.Text,
+                IsPartial = p.IsPartial
+            });
+        }
+
+        await PreviousSessionService.AddOrUpdateSessionAsync(collectionName);
+        if (objRef is not null)
+        {
+            await JS.InvokeVoidAsync("aimitraChat.start", objRef, collectionName);
+        }
+        StateHasChanged();
+    }
+
 	[JSInvokable]
-	public Task ReceiveMessage(string user, string message)
-	{
-		messages.Add(new MessageEntry { User = user, Text = message });
-		if (user == "Aimitra")
-		{
-			isThinking = false;
-		}
-		StateHasChanged();
-		return Task.CompletedTask;
-	}
+    public async Task ReceiveMessage(string user, string message, string? messageId, bool isPartial)
+    {
+        if (user == "Aimitra" && isPartial &&
+            string.Equals(message?.Trim(), "Thinking...", StringComparison.OrdinalIgnoreCase))
+        {
+            isThinking = true;
+            StateHasChanged();
+            return;
+        }
+
+        UpsertMessage(user, message, messageId, isPartial);
+        if (user == "Aimitra")
+        {
+            isThinking = isPartial;
+        }
+
+        // persist incoming message for the active session
+        try
+        {
+            await PreviousSessionService.AddMessageAsync(collectionName, messageId, user, message, DateTime.UtcNow, isPartial);
+        }
+        catch { }
+
+        StateHasChanged();
+    }
+
+    private void UpsertMessage(string user, string message, string? messageId, bool isPartial)
+    {
+        var existing = !string.IsNullOrWhiteSpace(messageId)
+            ? messages.FindIndex(m => string.Equals(m.Id, messageId, StringComparison.OrdinalIgnoreCase))
+            : -1;
+
+        if (existing >= 0)
+        {
+            messages[existing].User = user;
+            messages[existing].Text = message;
+            messages[existing].IsPartial = isPartial;
+            messages[existing].Id = messageId ?? messages[existing].Id;
+            return;
+        }
+
+        messages.Add(new MessageEntry
+        {
+            Id = messageId ?? Guid.NewGuid().ToString("N"),
+            User = user,
+            Text = message,
+            IsPartial = isPartial
+        });
+    }
 
 	private async Task Send()
 	{
@@ -258,19 +425,27 @@
         }
     }
 
-	private void OnMessageKeyUp(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
-	{
-		if (e.Key == "Enter" && !e.ShiftKey)
-		{
-			Send();
-		}
-	}
+    private void OnMessageKeyUp(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            Send();
+        }
+    }
 
-	private class MessageEntry
-	{
-		public string User { get; set; } = string.Empty;
-		public string Text { get; set; } = string.Empty;
-	}
+    private static string RenderMarkdown(string text)
+    {
+        var markdown = string.IsNullOrWhiteSpace(text) ? string.Empty : text;
+        return Markdown.ToHtml(markdown, MarkdownPipeline);
+    }
+
+    private class MessageEntry
+    {
+        public string Id { get; set; } = string.Empty;
+        public string User { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+        public bool IsPartial { get; set; }
+    }
 
 	public void Dispose()
 	{

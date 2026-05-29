@@ -13,7 +13,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
+    <NoWarn>$(NoWarn);SKEXP0001;SKEXP0050;SKEXP0010;SKEXP0070</NoWarn>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -21,3 +22,5 @@
   </PropertyGroup>
 
 </Project>
+
+

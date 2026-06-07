@@ -1,4 +1,4 @@
-
+﻿
 using System;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
@@ -9,7 +9,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Numerics;
 
-namespace Aimitra.Security{
+namespace METASYNAPSE.Security{
 
 public class PresidioResponse
 {
@@ -95,3 +95,4 @@ public class MaskingCore
 
     }
 }
+

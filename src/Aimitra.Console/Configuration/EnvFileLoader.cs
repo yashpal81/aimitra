@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Aimitra.ConsoleApp.Configuration
+namespace METASYNAPSE.ConsoleApp.Configuration
 {
     internal static class EnvFileLoader
     {
@@ -74,3 +74,4 @@ namespace Aimitra.ConsoleApp.Configuration
         }
     }
 }
+

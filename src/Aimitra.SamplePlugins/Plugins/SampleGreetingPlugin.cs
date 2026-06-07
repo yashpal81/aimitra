@@ -1,7 +1,7 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using Microsoft.SemanticKernel;
 
-namespace Aimitra.SamplePlugins.Plugins
+namespace METASYNAPSE.SamplePlugins.Plugins
 {
     public sealed class SampleGreetingPlugin
     {
@@ -12,3 +12,4 @@ namespace Aimitra.SamplePlugins.Plugins
         }
     }
 }
+

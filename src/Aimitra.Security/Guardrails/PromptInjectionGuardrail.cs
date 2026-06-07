@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.SemanticKernel;
 
-namespace Aimitra.Security.Guardrails
+namespace METASYNAPSE.Security.Guardrails
 {
     /// <summary>
     /// Prompt Injection Guardrail.
@@ -207,3 +207,4 @@ namespace Aimitra.Security.Guardrails
             => s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n");
     }
 }
+

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="3.0.0" />
@@ -15,7 +15,9 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <NoWarn>$(NoWarn);SKEXP0001;SKEXP0050;SKEXP0010;SKEXP0070</NoWarn>
+        <AssemblyName>MetaSynapse.Services</AssemblyName>
+    <RootNamespace>MetaSynapse.Services</RootNamespace>
+<NoWarn>$(NoWarn);SKEXP0001;SKEXP0050;SKEXP0010;SKEXP0070</NoWarn>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -23,5 +25,9 @@
   </PropertyGroup>
 
 </Project>
+
+
+
+
 
 

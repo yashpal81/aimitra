@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 #pragma warning disable CS1591  // self-documenting property names
 
-namespace Aimitra.Core.Models
+namespace METASYNAPSE.Core.Models
 {
     /// <summary>
     /// Holds all mutable facts about an ongoing session.
@@ -101,3 +101,4 @@ namespace Aimitra.Core.Models
     /// <summary>A single message in the conversation transcript.</summary>
     public record ConversationTurn(string Role, string Content, DateTimeOffset Timestamp);
 }
+

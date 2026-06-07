@@ -1,12 +1,12 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Aimitra.Core.Interfaces;
-using Aimitra.Core.Models;
+using METASYNAPSE.Core.Interfaces;
+using METASYNAPSE.Core.Models;
 using Npgsql;
 
-namespace Aimitra.Services.Metadata
+namespace METASYNAPSE.Services.Metadata
 {
     public sealed class PostgresMetadataService : IDbMetadataService
     {
@@ -271,3 +271,4 @@ order by kcu.table_schema, kcu.table_name, kcu.ordinal_position";
         }
     }
 }
+

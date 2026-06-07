@@ -1,6 +1,6 @@
-using System;
+﻿using System;
 
-namespace Aimitra.WebChat.Services
+namespace METASYNAPSE.WebChat.Services
 {
     public class PreviousSessionMessage
     {
@@ -11,3 +11,4 @@ namespace Aimitra.WebChat.Services
         public bool IsPartial { get; set; }
     }
 }
+

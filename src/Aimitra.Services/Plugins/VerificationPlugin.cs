@@ -1,9 +1,9 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Text.Json;
-using Aimitra.Core.Models;
+using METASYNAPSE.Core.Models;
 using Microsoft.SemanticKernel;
 
-namespace Aimitra.Services.Plugins
+namespace METASYNAPSE.Services.Plugins
 {
     /// <summary>
     /// Semantic Kernel plugin for the Verification agent.
@@ -122,3 +122,4 @@ namespace Aimitra.Services.Plugins
         }
     }
 }
+

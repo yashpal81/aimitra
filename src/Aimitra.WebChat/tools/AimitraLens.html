@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AimitraLens — Agent Trace Visualizer</title>
+<title>METASYNAPSELens — Agent Trace Visualizer</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -329,7 +329,7 @@ textarea#paste-area:focus { outline: none; border-color: var(--accent); }
 <!-- ── Header ──────────────────────────────────────────────────────────── -->
 <header>
   <div style="display:flex;align-items:center">
-    <div class="logo">AimitraLens <span>— Agent Trace Visualizer</span></div>
+    <div class="logo">METASYNAPSELens <span>— Agent Trace Visualizer</span></div>
     <span class="header-meta" id="trace-meta"></span>
   </div>
   <div class="header-right">
@@ -345,7 +345,7 @@ textarea#paste-area:focus { outline: none; border-color: var(--accent); }
   <p>— or paste JSON and press Ctrl+Enter —</p>
   <textarea id="paste-area" placeholder='{ "traceId": "...", "timeline": [ ... ] }'></textarea>
   <button class="primary" id="btn-viz">Visualize</button>
-  <span class="drop-hint">Accepts <b>AimitraLens</b> traces (<code>TraceBuilder.ToJson()</code>) and Agentforce <b>PlanSuccessResponse</b> traces — auto-detected</span>
+  <span class="drop-hint">Accepts <b>METASYNAPSELens</b> traces (<code>TraceBuilder.ToJson()</code>) and Agentforce <b>PlanSuccessResponse</b> traces — auto-detected</span>
 </div>
 
 <!-- ── Main ────────────────────────────────────────────────────────────── -->
@@ -1439,7 +1439,7 @@ function renderFSM(t) {
   });
 }
 
-// ── PlanSuccessResponse → AimitraLens converter ──────────────────────────────
+// ── PlanSuccessResponse → METASYNAPSELens converter ──────────────────────────────
 function convertPlanSuccessResponse(input) {
   const plan     = input.plan || [];
   const traceId  = (input.planId || '').replace(/-/g, '').slice(0, 32);
@@ -1657,3 +1657,4 @@ function esc(s) {
 </script>
 </body>
 </html>
+

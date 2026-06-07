@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Net.Http;
 using System.Text;
@@ -6,9 +6,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using Aimitra.Services.Interfaces;
+using METASYNAPSE.Services.Interfaces;
 
-namespace Aimitra.Services.OpenRouter
+namespace METASYNAPSE.Services.OpenRouter
 {
     public sealed class OpenRouterClient : IOpenRouterClient
     {
@@ -114,3 +114,4 @@ namespace Aimitra.Services.OpenRouter
         }
     }
 }
+

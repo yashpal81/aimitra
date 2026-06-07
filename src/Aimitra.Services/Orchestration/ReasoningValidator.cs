@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Aimitra.Core.Models;
+using METASYNAPSE.Core.Models;
 
-namespace Aimitra.Services.Orchestration
+namespace METASYNAPSE.Services.Orchestration
 {
     /// <summary>
     /// Verifies that an LLM response is grounded in the tool outputs produced during
@@ -180,3 +180,4 @@ namespace Aimitra.Services.Orchestration
             Regex.Replace(value, @"\s+", " ").Trim();
     }
 }
+

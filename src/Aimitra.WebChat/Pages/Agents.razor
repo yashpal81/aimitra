@@ -1,14 +1,14 @@
-@page "/agents"
-@using Aimitra.WebChat.Models
-@using Aimitra.WebChat.Services
+﻿@page "/agents"
+@using METASYNAPSE.WebChat.Models
+@using METASYNAPSE.WebChat.Services
 @inject NavigationManager Navigation
-@inject Aimitra.WebChat.Services.AgentDefinitionStore DefinitionStore
+@inject METASYNAPSE.WebChat.Services.AgentDefinitionStore DefinitionStore
 
 <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
     <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/50">
         <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-                <p class="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-700">Aimitra Agents</p>
+                <p class="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-700">METASYNAPSE Agents</p>
                 <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Agent registry</h1>
                 <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
                     Review every agent definition in <code>App_Data</code>, see which one is active, and switch the active agent with a single radio selection.
@@ -138,3 +138,4 @@
         Navigation.NavigateTo($"/agent-designer?file={encoded}");
     }
 }
+

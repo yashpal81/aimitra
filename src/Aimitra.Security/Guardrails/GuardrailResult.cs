@@ -1,6 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace Aimitra.Security.Guardrails
+namespace METASYNAPSE.Security.Guardrails
 {
     /// <summary>
     /// Represents the outcome of a guardrail evaluation.
@@ -55,3 +55,4 @@ namespace Aimitra.Security.Guardrails
         }
     }
 }
+

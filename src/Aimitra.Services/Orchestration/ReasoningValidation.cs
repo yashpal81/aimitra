@@ -1,6 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace Aimitra.Core.Models
+namespace METASYNAPSE.Core.Models
 {
     /// <summary>
     /// The outcome of a <c>ReasoningValidator</c> grounding check.
@@ -68,3 +68,4 @@ namespace Aimitra.Core.Models
             new() { Category = "UNVERIFIABLE", Reason = reason };
     }
 }
+

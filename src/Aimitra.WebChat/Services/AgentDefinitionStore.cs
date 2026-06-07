@@ -1,7 +1,7 @@
-using System.Text.Json;
-using Aimitra.WebChat.Models;
+﻿using System.Text.Json;
+using METASYNAPSE.WebChat.Models;
 
-namespace Aimitra.WebChat.Services
+namespace METASYNAPSE.WebChat.Services
 {
     public class AgentDefinitionStore
     {
@@ -159,3 +159,4 @@ namespace Aimitra.WebChat.Services
 
     public sealed record AgentDefinitionFile(string FilePath, AgentDefinition Definition);
 }
+

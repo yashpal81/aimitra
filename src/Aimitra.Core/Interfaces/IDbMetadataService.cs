@@ -1,9 +1,9 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Aimitra.Core.Models;
+using METASYNAPSE.Core.Models;
 
-namespace Aimitra.Core.Interfaces
+namespace METASYNAPSE.Core.Interfaces
 {
     public interface IDbMetadataService
     {
@@ -16,3 +16,4 @@ namespace Aimitra.Core.Interfaces
        
     }
 }
+

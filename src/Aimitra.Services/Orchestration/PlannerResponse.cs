@@ -1,7 +1,7 @@
-using Aimitra.Core.Models;
-using Aimitra.Security.Guardrails;
+﻿using METASYNAPSE.Core.Models;
+using METASYNAPSE.Security.Guardrails;
 
-namespace Aimitra.Services.Orchestration
+namespace METASYNAPSE.Services.Orchestration
 {
     /// <summary>
     /// Wraps every final agent turn response, attaching safety and grounding metadata.
@@ -86,3 +86,4 @@ namespace Aimitra.Services.Orchestration
             };
     }
 }
+

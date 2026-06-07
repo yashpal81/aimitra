@@ -1,13 +1,13 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Aimitra.Core.Models;
-using Aimitra.Services.Interfaces;
-using Aimitra.Services.Orchestration;
+using METASYNAPSE.Core.Models;
+using METASYNAPSE.Services.Interfaces;
+using METASYNAPSE.Services.Orchestration;
 using Moq;
 using Xunit;
 
-namespace Aimitra.Tests
+namespace METASYNAPSE.Tests
 {
     public class SemanticKernelOrchestratorTests
     {
@@ -19,7 +19,7 @@ namespace Aimitra.Tests
                 .ReturnsAsync("{\"thought\":\"Inspect schema\",\"action\":\"DB_SCHEMA\",\"action_input\":\"Need details\"}")
                 .ReturnsAsync("{\"thought\":\"Produce SQL\",\"action\":\"WRITE_SQL\",\"action_input\":\"SELECT CustomerId, TotalAmount FROM dbo.Orders;\"}");
 
-            var orchestrator = new SemanticKernelOrchestrator("test_api_key","test_model", "https://test.endpoint   ");
+            var orchestrator = new SemanticKernelOrchestrator("topic_selector", "test_api_key", "test_model", "https://test.endpoint", "https://test.presidio");
             var schema = new DatabaseSchema(
                 databaseName: "TestDb",
                 tables: new List<TableDefinition>
@@ -44,3 +44,4 @@ namespace Aimitra.Tests
         }
     }
 }
+

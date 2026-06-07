@@ -1,8 +1,8 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
-using Aimitra.Core.Models;
+using METASYNAPSE.Core.Models;
 
-namespace Aimitra.Services.Orchestration
+namespace METASYNAPSE.Services.Orchestration
 {
     public static class DatabaseQueryTool
     {
@@ -104,3 +104,4 @@ namespace Aimitra.Services.Orchestration
         }
     }
 }
+

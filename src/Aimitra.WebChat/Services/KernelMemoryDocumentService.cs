@@ -1,7 +1,7 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Microsoft.KernelMemory;
 
-namespace Aimitra.WebChat.Services;
+namespace METASYNAPSE.WebChat.Services;
 
 public sealed class KernelMemoryDocumentService : IDocumentMemoryService
 {
@@ -155,7 +155,7 @@ public sealed class KernelMemoryDocumentService : IDocumentMemoryService
         SaveEntry(entry with { UpdatedAtUtc = DateTimeOffset.UtcNow });
     }
 
-    public string GetLastCollection() => LoadState().GetValueOrDefault("lastCollection")?.Trim() ?? "aimitra";
+    public string GetLastCollection() => LoadState().GetValueOrDefault("lastCollection")?.Trim() ?? "METASYNAPSE";
 
     public void SetLastCollection(string collection)
     {
@@ -168,7 +168,7 @@ public sealed class KernelMemoryDocumentService : IDocumentMemoryService
     private string GetCollectionName(string? collection)
     {
         var name = string.IsNullOrWhiteSpace(collection) ? GetLastCollection() : collection.Trim();
-        return string.IsNullOrWhiteSpace(name) ? "aimitra" : name;
+        return string.IsNullOrWhiteSpace(name) ? "METASYNAPSE" : name;
     }
 
     private string GetCollectionFolder(string collectionName)
@@ -242,3 +242,4 @@ public sealed class KernelMemoryDocumentService : IDocumentMemoryService
             _ => "application/octet-stream"
         };
 }
+

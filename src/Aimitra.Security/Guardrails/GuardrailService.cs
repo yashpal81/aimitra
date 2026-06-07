@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 
-namespace Aimitra.Security.Guardrails
+namespace METASYNAPSE.Security.Guardrails
 {
     /// <summary>
     /// Convenience facade that registers both guardrails with a Semantic Kernel builder.
@@ -72,3 +72,4 @@ namespace Aimitra.Security.Guardrails
         }
     }
 }
+

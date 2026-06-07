@@ -1,14 +1,14 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Aimitra.Core.Models;
-using Aimitra.Services.Interfaces;
+using METASYNAPSE.Core.Models;
+using METASYNAPSE.Services.Interfaces;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 
-namespace Aimitra.Services.Orchestration
+namespace METASYNAPSE.Services.Orchestration
 {
 
 

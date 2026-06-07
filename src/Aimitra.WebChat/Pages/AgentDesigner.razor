@@ -1,15 +1,15 @@
-@page "/agent-designer"
-@using Aimitra.WebChat.Models
+﻿@page "/agent-designer"
+@using METASYNAPSE.WebChat.Models
 @using Microsoft.AspNetCore.Components
-@inject Aimitra.WebChat.Services.AgentDefinitionStore DefinitionStore
-@inject Aimitra.WebChat.Services.AgentDefinitionLoader DefinitionLoader
+@inject METASYNAPSE.WebChat.Services.AgentDefinitionStore DefinitionStore
+@inject METASYNAPSE.WebChat.Services.AgentDefinitionLoader DefinitionLoader
 
 <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
     <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-lg shadow-slate-200/50">
                 <div class="mb-6">
                     <div class="flex flex-wrap items-start justify-between gap-4">
                         <div>
-                            <p class="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-700">Aimitra Designer</p>
+                            <p class="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-700">METASYNAPSE Designer</p>
                             <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Custom Agent Builder</h1>
                             <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
                                 Define a new agent group, organize it into topics, attach kernel functions to each topic, and save the structure as JSON.
@@ -842,3 +842,4 @@
         isPromptPluginModalOpen = false;
     }
 }
+

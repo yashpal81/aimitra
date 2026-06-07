@@ -1,15 +1,15 @@
-using System.Text.Json;
-using Aimitra.Core.Models;
-using Aimitra.Plugins.Plugins;
-using Aimitra.SamplePlugins.Plugins;
-using Aimitra.Security.Guardrails;
-using Aimitra.Services.Orchestration;
-using Aimitra.Services.Plugins;
-using Aimitra.WebChat.Models;
+﻿using System.Text.Json;
+using METASYNAPSE.Core.Models;
+using METASYNAPSE.Plugins.Plugins;
+using METASYNAPSE.SamplePlugins.Plugins;
+using METASYNAPSE.Security.Guardrails;
+using METASYNAPSE.Services.Orchestration;
+using METASYNAPSE.Services.Plugins;
+using METASYNAPSE.WebChat.Models;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Plugins.Core;
 
-namespace Aimitra.WebChat.Services
+namespace METASYNAPSE.WebChat.Services
 {
     public sealed class AgentDefinitionLoader
     {
@@ -110,7 +110,7 @@ Console.WriteLine("Kernel function options:");
                 .FirstOrDefault(message => !string.IsNullOrWhiteSpace(message));
 
             return string.IsNullOrWhiteSpace(welcomeMessage)
-                ? "Welcome to Aimitra. Start a conversation and I’ll route it through the right tools, knowledge base, and guardrails."
+                ? "Welcome to METASYNAPSE. Start a conversation and I’ll route it through the right tools, knowledge base, and guardrails."
                 : welcomeMessage!;
         }
 
@@ -276,7 +276,7 @@ Console.WriteLine("Kernel function options:");
                 ["FileIOPlugin"] = KernelPluginFactory.CreateFromObject(new FileIOPlugin(), "FileIOPlugin"),
                 ["HttpPlugin"] = KernelPluginFactory.CreateFromObject(new HttpPlugin(), "HttpPlugin"),
                 ["WaitPlugin"] = KernelPluginFactory.CreateFromObject(new WaitPlugin(), "WaitPlugin"),
-                ["GoogleDrivePlugin"] = KernelPluginFactory.CreateFromObject(new Aimitra.SamplePlugins.Plugins.GoogleDrivePlugin(), "GoogleDrivePlugin")
+                ["GoogleDrivePlugin"] = KernelPluginFactory.CreateFromObject(new METASYNAPSE.SamplePlugins.Plugins.GoogleDrivePlugin(), "GoogleDrivePlugin")
             };
 
             return pluginCatalog;
@@ -301,7 +301,7 @@ Console.WriteLine("Kernel function options:");
                 ["FileIOPlugin"] = new FileIOPlugin(),
                 ["HttpPlugin"] = new HttpPlugin(),
                 ["WaitPlugin"] = new WaitPlugin(),
-                ["GoogleDrivePlugin"] = new Aimitra.SamplePlugins.Plugins.GoogleDrivePlugin()
+                ["GoogleDrivePlugin"] = new METASYNAPSE.SamplePlugins.Plugins.GoogleDrivePlugin()
             };
         }
 
@@ -528,3 +528,4 @@ Console.WriteLine("Kernel function options:");
         }
     }
 }
+

@@ -1,26 +1,26 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Aimitra.Core.Models;
-using Aimitra.Services.Interfaces;
+using METASYNAPSE.Core.Models;
+using METASYNAPSE.Services.Interfaces;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using Microsoft.SemanticKernel.ChatCompletion;
-using Aimitra.Core.Interfaces;
-using Aimitra.Services.Metadata;
+using METASYNAPSE.Core.Interfaces;
+using METASYNAPSE.Services.Metadata;
 using System.ClientModel;
 using System.Text.RegularExpressions;
-using Aimitra.Services.Plugins;
-using Aimitra.Security;
-using Aimitra.Security.Guardrails;
+using METASYNAPSE.Services.Plugins;
+using METASYNAPSE.Security;
+using METASYNAPSE.Security.Guardrails;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
 
-namespace Aimitra.Services.Orchestration
+namespace METASYNAPSE.Services.Orchestration
 {
     public class XLamStep
 {
@@ -288,7 +288,7 @@ public class ActionCall
             CancellationToken cancellationToken = default)
         {
             Console.WriteLine($"Running with topic with 20sec wait: {topic.Name}");
-            await Task.Delay(20000);
+            await Task.Delay(30000);
             if (topic == null) throw new ArgumentNullException(nameof(topic));
 
             var maskingEngine = new PiiMaskingEngine(_presidioEndpoint);
@@ -391,7 +391,7 @@ public class ActionCall
 
             for (int i = 0; i < topics.Count; i++)
             {
-                await Task.Delay(20000);
+                await Task.Delay(30000);
                 var topic = topics[i];
                 Console.WriteLine($"[TopicRouter] Step {i + 1}/{topics.Count}: '{topic.Name}'");
 
@@ -483,3 +483,4 @@ public class ActionCall
 
     }
 }
+

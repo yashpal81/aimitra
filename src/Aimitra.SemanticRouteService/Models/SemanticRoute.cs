@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
-namespace Aimitra.SemanticRouteService.Models
+namespace METASYNAPSE.SemanticRouteService.Models
 {
     public class SemanticRoute
     {
@@ -10,3 +10,4 @@ namespace Aimitra.SemanticRouteService.Models
         public List<ReadOnlyMemory<float>> EmbeddedUtterances { get; set; } = new();
     }
 }
+

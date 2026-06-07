@@ -1,11 +1,11 @@
-@page "/chat"
+﻿@page "/chat"
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components.Forms
 @using Markdig
-@inject Aimitra.WebChat.Services.IDocumentMemoryService DocumentMemory
-@inject Aimitra.WebChat.Services.AgentDefinitionLoader AgentDefinitions
+@inject METASYNAPSE.WebChat.Services.IDocumentMemoryService DocumentMemory
+@inject METASYNAPSE.WebChat.Services.AgentDefinitionLoader AgentDefinitions
 @inject IJSRuntime JS
-@inject Aimitra.WebChat.Services.IPreviousSessionService PreviousSessionService
+@inject METASYNAPSE.WebChat.Services.IPreviousSessionService PreviousSessionService
 
 <style>
     @@keyframes dotPulse {
@@ -36,7 +36,7 @@
                 <section class="border-b border-slate-200 p-6 min-w-0 lg:border-b-0 lg:border-r">
                     <div class="mb-6 flex items-start justify-between gap-4">
                         <div>
-                            <p class="text-sm font-medium uppercase tracking-[0.25em] text-cyan-700">Aimitra WebChat</p>
+                            <p class="text-sm font-medium uppercase tracking-[0.25em] text-cyan-700">METASYNAPSE WebChat</p>
                             <h3 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Enterprise chat orchestration</h3>
                             <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
                                 Route messages through topic-aware orchestration, plugin execution, and security-aware responses.
@@ -64,9 +64,9 @@
                             {
                                 @foreach (var m in messages)
                                 {
-                                    <div class="flex min-w-0 w-full @(m.User == "Aimitra" ? "justify-start" : "justify-end")">
-                                        <div class="max-w-[70%] w-full rounded-2xl px-4 py-3 shadow-sm break-words whitespace-normal overflow-hidden @(m.User == "Aimitra" ? "border border-cyan-100 bg-cyan-50 text-slate-900" : "border border-slate-200 bg-white text-slate-900")">
-                                            <div class="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] @(m.User == "Aimitra" ? "text-cyan-700" : "text-slate-500")">
+                                    <div class="flex min-w-0 w-full @(m.User == "METASYNAPSE" ? "justify-start" : "justify-end")">
+                                        <div class="max-w-[70%] w-full rounded-2xl px-4 py-3 shadow-sm break-words whitespace-normal overflow-hidden @(m.User == "METASYNAPSE" ? "border border-cyan-100 bg-cyan-50 text-slate-900" : "border border-slate-200 bg-white text-slate-900")">
+                                            <div class="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] @(m.User == "METASYNAPSE" ? "text-cyan-700" : "text-slate-500")">
                                                 @m.User
 
                                             </div>
@@ -80,7 +80,7 @@
                                 <div class="flex justify-start">
                                     <div class="max-w-[80%] rounded-2xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-slate-900 shadow-sm">
                                         <div class="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-700">
-                                            Aimitra
+                                            METASYNAPSE
                                         </div>
                                         <div class="flex items-center gap-2 text-sm leading-6 text-slate-700">
                                             <span>Thinking</span>
@@ -102,7 +102,7 @@
                                     <span class="text-xl leading-none">+</span>
                                 </label>
 
-                                <textarea placeholder="Message Aimitra"
+                                <textarea placeholder="Message METASYNAPSE"
                                           @bind="currentMessage"
                                           @bind:event="oninput"
                                           rows="1"
@@ -244,7 +244,7 @@
                 messages.Clear();
                 foreach (var p in persisted)
                 {
-                    if (p.User == "Aimitra" && p.IsPartial &&
+                    if (p.User == "METASYNAPSE" && p.IsPartial &&
                         string.Equals(p.Text?.Trim(), "Thinking...", StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
@@ -261,12 +261,12 @@
             }
             else
             {
-                collectionName = await JS.InvokeAsync<string>("aimitraChat.getOrCreateSessionCollection", "chat");
+                collectionName = await JS.InvokeAsync<string>("METASYNAPSEChat.getOrCreateSessionCollection", "chat");
                 DocumentMemory.SetLastCollection(collectionName);
             }
 
             // start JS with the chosen collection and record session
-            await JS.InvokeVoidAsync("aimitraChat.start", objRef, collectionName);
+            await JS.InvokeVoidAsync("METASYNAPSEChat.start", objRef, collectionName);
 
             await PreviousSessionService.AddOrUpdateSessionAsync(collectionName);
             previousSessions = await PreviousSessionService.GetRecentSessionsAsync();
@@ -290,7 +290,7 @@
         await PreviousSessionService.AddOrUpdateSessionAsync(collectionName);
         if (objRef is not null)
         {
-            await JS.InvokeVoidAsync("aimitraChat.start", objRef, collectionName);
+            await JS.InvokeVoidAsync("METASYNAPSEChat.start", objRef, collectionName);
         }
         previousSessions = await PreviousSessionService.GetRecentSessionsAsync();
         StateHasChanged();
@@ -307,7 +307,7 @@
         var persisted = await PreviousSessionService.GetSessionMessagesAsync(collectionName);
         foreach (var p in persisted)
         {
-            if (p.User == "Aimitra" && p.IsPartial &&
+            if (p.User == "METASYNAPSE" && p.IsPartial &&
                 string.Equals(p.Text?.Trim(), "Thinking...", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
@@ -325,7 +325,7 @@
         await PreviousSessionService.AddOrUpdateSessionAsync(collectionName);
         if (objRef is not null)
         {
-            await JS.InvokeVoidAsync("aimitraChat.start", objRef, collectionName);
+            await JS.InvokeVoidAsync("METASYNAPSEChat.start", objRef, collectionName);
         }
         StateHasChanged();
     }
@@ -333,7 +333,7 @@
 	[JSInvokable]
     public async Task ReceiveMessage(string user, string message, string? messageId, bool isPartial)
     {
-        if (user == "Aimitra" && isPartial &&
+        if (user == "METASYNAPSE" && isPartial &&
             string.Equals(message?.Trim(), "Thinking...", StringComparison.OrdinalIgnoreCase))
         {
             isThinking = true;
@@ -342,7 +342,7 @@
         }
 
         UpsertMessage(user, message, messageId, isPartial);
-        if (user == "Aimitra")
+        if (user == "METASYNAPSE")
         {
             isThinking = isPartial;
         }
@@ -388,7 +388,7 @@
 			isThinking = true;
 			StateHasChanged();
 
-			await JS.InvokeVoidAsync("aimitraChat.sendMessage", user, currentMessage);
+			await JS.InvokeVoidAsync("METASYNAPSEChat.sendMessage", user, currentMessage);
 			currentMessage = string.Empty;
 			StateHasChanged();
 		}
@@ -449,7 +449,8 @@
 
 	public void Dispose()
 	{
-        _ = JS.InvokeVoidAsync("aimitraChat.stop");
+        _ = JS.InvokeVoidAsync("METASYNAPSEChat.stop");
 		objRef?.Dispose();
 	}
 }
+

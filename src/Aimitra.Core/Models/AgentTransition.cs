@@ -1,4 +1,4 @@
-namespace Aimitra.Core.Models
+﻿namespace METASYNAPSE.Core.Models
 {
     /// <summary>
     /// Describes a single handoff between two agents.
@@ -38,3 +38,4 @@ namespace Aimitra.Core.Models
         public ConversationState? StateSnapshot { get; set; }
     }
 }
+

@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 
-namespace Aimitra.WebChat.Services
+namespace METASYNAPSE.WebChat.Services
 {
     public class SqlitePreviousSessionService : IPreviousSessionService, IDisposable
     {
@@ -132,3 +132,4 @@ namespace Aimitra.WebChat.Services
         }
     }
 }
+

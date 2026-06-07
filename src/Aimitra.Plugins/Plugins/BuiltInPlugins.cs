@@ -1,6 +1,6 @@
-using Microsoft.SemanticKernel.Plugins.Core;
+﻿using Microsoft.SemanticKernel.Plugins.Core;
 
-namespace Aimitra.Plugins.Plugins;
+namespace METASYNAPSE.Plugins.Plugins;
 
 public static class BuiltInPlugins
 {
@@ -18,3 +18,4 @@ public static class BuiltInPlugins
         };
     }
 }
+

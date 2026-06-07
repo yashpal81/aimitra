@@ -3,21 +3,21 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aimitra.Core", "Aimitra.Core\Aimitra.Core.csproj", "{D68AE8A2-31DA-474C-860E-5D937A5D1964}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "METASYNAPSE.Core", "Aimitra.Core\\Aimitra.Core.csproj", "{D68AE8A2-31DA-474C-860E-5D937A5D1964}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aimitra.Services", "Aimitra.Services\Aimitra.Services.csproj", "{DCF50408-F2B2-4874-889E-6C2F4B223AB9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "METASYNAPSE.Services", "Aimitra.Services\\Aimitra.Services.csproj", "{DCF50408-F2B2-4874-889E-6C2F4B223AB9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aimitra.Console", "Aimitra.Console\Aimitra.Console.csproj", "{9A8BCE7D-D8DE-4E58-868D-B3262FD00AE8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "METASYNAPSE.Console", "Aimitra.Console\\Aimitra.Console.csproj", "{9A8BCE7D-D8DE-4E58-868D-B3262FD00AE8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aimitra.Tests", "Aimitra.Tests\Aimitra.Tests.csproj", "{2DB01C8A-0F01-4E96-9271-8FE919E23BF0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "METASYNAPSE.Tests", "Aimitra.Tests\\Aimitra.Tests.csproj", "{2DB01C8A-0F01-4E96-9271-8FE919E23BF0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aimitra.Security", "Aimitra.Security\Aimitra.Security.csproj", "{AB45CE0B-BF3A-48EB-ABA1-681D6AE23A00}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "METASYNAPSE.Security", "Aimitra.Security\\Aimitra.Security.csproj", "{AB45CE0B-BF3A-48EB-ABA1-681D6AE23A00}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aimitra.SamplePlugins", "Aimitra.SamplePlugins\Aimitra.SamplePlugins.csproj", "{58D8F830-2F31-4D21-97E5-5D5C1C7B2A90}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "METASYNAPSE.SamplePlugins", "Aimitra.SamplePlugins\\Aimitra.SamplePlugins.csproj", "{58D8F830-2F31-4D21-97E5-5D5C1C7B2A90}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aimitra.Plugins", "Aimitra.Plugins\Aimitra.Plugins.csproj", "{8F6E67AE-5B55-4B73-92D7-3A9C8D4DBF61}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "METASYNAPSE.Plugins", "Aimitra.Plugins\\Aimitra.Plugins.csproj", "{8F6E67AE-5B55-4B73-92D7-3A9C8D4DBF61}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aimitra.SemanticRouteService", "Aimitra.SemanticRouteService\Aimitra.SemanticRouteService.csproj", "{B0B6D1BC-7E34-4B6D-9B8D-13E8F9937D41}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "METASYNAPSE.SemanticRouteService", "Aimitra.SemanticRouteService\\Aimitra.SemanticRouteService.csproj", "{B0B6D1BC-7E34-4B6D-9B8D-13E8F9937D41}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -130,3 +130,5 @@ Global
 		{B0B6D1BC-7E34-4B6D-9B8D-13E8F9937D41}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
+
+

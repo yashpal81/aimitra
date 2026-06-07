@@ -9,7 +9,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Numerics;
 
-namespace Aimitra.Security{
+namespace METASYNAPSE.Security{
 
 public class PiiMaskingEngine : IPromptRenderFilter, IFunctionInvocationFilter, IAutoFunctionInvocationFilter
 {
@@ -168,3 +168,4 @@ public class PiiMaskingEngine : IPromptRenderFilter, IFunctionInvocationFilter, 
     }
 }
 }
+

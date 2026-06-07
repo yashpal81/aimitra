@@ -7,6 +7,7 @@ using METASYNAPSE.Core.Models;
 using METASYNAPSE.Security;
 using METASYNAPSE.Security.Guardrails;
 using METASYNAPSE.Services.Plugins;
+using METASYNAPSE.Services.RateLimiting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -118,6 +119,7 @@ namespace METASYNAPSE.Services.Agents
             ChatMessageContent result;
             try
             {
+                await LlmRateLimiter.WaitForAvailabilityAsync(cancellationToken).ConfigureAwait(false);
                 result = await kernel
                     .GetRequiredService<IChatCompletionService>()
                     .GetChatMessageContentAsync(chatHistory, settings, kernel, cancellationToken)

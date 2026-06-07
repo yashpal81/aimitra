@@ -29,11 +29,101 @@
 </style>
 
 <div class="min-h-[calc(100vh-2rem)] bg-slate-100 text-slate-900">
-    <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-        <div class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-200/60">
+    <div class="w-full px-0 py-6">
+        <div class="relative overflow-hidden rounded-none lg:rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-200/60">
             <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-500 via-sky-500 to-indigo-500"></div>
-            <div class="grid gap-0 lg:grid-cols-[1.35fr_0.85fr]">
-                <section class="border-b border-slate-200 p-6 min-w-0 lg:border-b-0 lg:border-r">
+            <div class="grid gap-0 lg:grid-cols-[0.2fr_0.8fr]">
+                <aside class="space-y-6 bg-slate-50 p-6">
+                    <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Session</p>
+                        <div class="mt-3 grid gap-3">
+                            <label class="block">
+                                <span class="mb-2 block text-xs font-medium text-slate-500">User</span>
+                                <input placeholder="Your name" @bind="user" @bind:event="oninput"
+                                       class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20" />
+                            </label>
+
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                                    <span class="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-700">Session KB: @collectionName</span>
+                                    <span class="rounded-full bg-cyan-50 px-2 py-1 font-semibold text-cyan-700">
+                                        @if (selectedFile is not null)
+                                        {
+                                            @($"Attached: {selectedFile.Name}")
+                                        }
+                                        else
+                                        {
+                                            @("No file attached")
+                                        }
+                                    </span>
+                                </div>
+                                <div class="mt-3 flex flex-col gap-2">
+                                    <label class="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-900">
+                                        <span class="rounded-lg border border-slate-200 bg-white px-2 py-1">Attach file</span>
+                                        <InputFile OnChange="OnFileSelected" class="hidden" />
+                                    </label>
+                                    @if (!string.IsNullOrWhiteSpace(status))
+                                    {
+                                        <div class="text-[11px] text-slate-500">@status</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="rounded-2xl border border-slate-200 bg-white p-3">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Previous Sessions</p>
+                                    <div class="flex gap-2">
+                                        <button class="text-xs text-slate-500 hover:text-slate-700" @onclick="LoadRecentSessions">Refresh</button>
+                                        <button class="text-xs text-slate-500 hover:text-slate-700" @onclick="StartNewSession">Start New Session</button>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 space-y-2">
+                                    @if (previousSessions.Count == 0)
+                                    {
+                                        <div class="text-sm text-slate-500">No previous sessions found.</div>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var s in previousSessions)
+                                        {
+                                            <div class="flex items-center justify-between">
+                                                <div class="text-sm text-slate-700">@s</div>
+                                                <div class="flex gap-1">
+                                                    <button title="Load session" class="p-2 rounded-lg text-slate-700 hover:bg-slate-200 transition" @onclick="() => LoadSession(s)">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l2 3h7a2 2 0 0 1 2 2z"></path>
+                                                        </svg>
+                                                    </button>
+                                                    <button title="Delete session" class="p-2 rounded-lg text-red-600 hover:bg-red-100 transition" @onclick="() => DeleteSession(s)">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                                                            <path d="M10 11v6"></path>
+                                                            <path d="M14 11v6"></path>
+                                                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-5">
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Notes</p>
+                        <ul class="mt-3 space-y-3 text-sm text-slate-600">
+                            <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-cyan-400"></span>Messages route through SignalR hub and topic orchestration.</li>
+                            <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-cyan-400"></span>PII masking and persona guardrails stay active in backend execution.</li>
+                            <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-cyan-400"></span>Tailwind keeps the surface responsive across desktop and mobile.</li>
+                        </ul>
+                    </div>
+                </aside>
+
+                <section class="border-b border-slate-200 p-6 min-w-0 lg:border-b-0 lg:border-l">
                     <div class="mb-6 flex items-start justify-between gap-4">
                         <div>
                             <p class="text-sm font-medium uppercase tracking-[0.25em] text-cyan-700">METASYNAPSE WebChat</p>
@@ -124,81 +214,6 @@
                         </div>
                     </div>
                 </section>
-
-                <aside class="space-y-6 bg-slate-50 p-6">
-                    <div class="rounded-2xl border border-slate-200 bg-white p-5">
-                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Session</p>
-                        <div class="mt-3 grid gap-3">
-                            <label class="block">
-                                <span class="mb-2 block text-xs font-medium text-slate-500">User</span>
-                                <input placeholder="Your name" @bind="user" @bind:event="oninput"
-                                       class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20" />
-                            </label>
-
-                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                                <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-                                    <span class="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-700">Session KB: @collectionName</span>
-                                    <span class="rounded-full bg-cyan-50 px-2 py-1 font-semibold text-cyan-700">
-                                        @if (selectedFile is not null)
-                                        {
-                                            @($"Attached: {selectedFile.Name}")
-                                        }
-                                        else
-                                        {
-                                            @("No file attached")
-                                        }
-                                    </span>
-                                </div>
-                                <div class="mt-3 flex flex-col gap-2">
-                                    <label class="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-900">
-                                        <span class="rounded-lg border border-slate-200 bg-white px-2 py-1">Attach file</span>
-                                        <InputFile OnChange="OnFileSelected" class="hidden" />
-                                    </label>
-                                    @if (!string.IsNullOrWhiteSpace(status))
-                                    {
-                                        <div class="text-[11px] text-slate-500">@status</div>
-                                    }
-                                </div>
-                            </div>
-
-                            <div class="rounded-2xl border border-slate-200 bg-white p-3">
-                                <div class="flex items-center justify-between">
-                                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Previous Sessions</p>
-                                    <div class="flex gap-2">
-                                        <button class="text-xs text-slate-500 hover:text-slate-700" @onclick="LoadRecentSessions">Refresh</button>
-                                        <button class="text-xs text-slate-500 hover:text-slate-700" @onclick="StartNewSession">Start New Session</button>
-                                    </div>
-                                </div>
-
-                                <div class="mt-3 space-y-2">
-                                    @if (previousSessions.Count == 0)
-                                    {
-                                        <div class="text-sm text-slate-500">No previous sessions found.</div>
-                                    }
-                                    else
-                                    {
-                                        @foreach (var s in previousSessions)
-                                        {
-                                            <div class="flex items-center justify-between">
-                                                <div class="text-sm text-slate-700">@s</div>
-                                                <button class="text-xs rounded px-2 py-1 bg-slate-100 text-slate-700 hover:bg-slate-200" @onclick="() => LoadSession(s)">Load</button>
-                                            </div>
-                                        }
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-5">
-                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Notes</p>
-                        <ul class="mt-3 space-y-3 text-sm text-slate-600">
-                            <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-cyan-400"></span>Messages route through SignalR hub and topic orchestration.</li>
-                            <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-cyan-400"></span>PII masking and persona guardrails stay active in backend execution.</li>
-                            <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-cyan-400"></span>Tailwind keeps the surface responsive across desktop and mobile.</li>
-                        </ul>
-                    </div>
-                </aside>
             </div>
         </div>
     </div>
@@ -327,6 +342,35 @@
         {
             await JS.InvokeVoidAsync("METASYNAPSEChat.start", objRef, collectionName);
         }
+        StateHasChanged();
+    }
+
+    private async Task DeleteSession(string col)
+    {
+        if (string.IsNullOrWhiteSpace(col)) return;
+        
+        if (!await JS.InvokeAsync<bool>("confirm", $"Delete session '{col}'? This cannot be undone."))
+        {
+            return;
+        }
+
+        await PreviousSessionService.DeleteSessionAsync(col);
+        previousSessions = await PreviousSessionService.GetRecentSessionsAsync();
+        
+        // If we deleted the current session, start a new one
+        if (collectionName == col)
+        {
+            collectionName = $"session_{Guid.NewGuid():N}";
+            DocumentMemory.SetLastCollection(collectionName);
+            messages.Clear();
+            status = $"Session deleted. Started new session {collectionName}";
+            await PreviousSessionService.AddOrUpdateSessionAsync(collectionName);
+            if (objRef is not null)
+            {
+                await JS.InvokeVoidAsync("METASYNAPSEChat.start", objRef, collectionName);
+            }
+        }
+        
         StateHasChanged();
     }
 

@@ -20,11 +20,27 @@
         },
         start: function (dotNetObject, collection) {
             dotNetRef = dotNetObject;
-            sessionCollection = collection || getOrCreateSessionCollection('chat');
+            const newCollection = collection || getOrCreateSessionCollection('chat');
 
-            console.debug('METASYNAPSEChat.start called, sessionCollection=', sessionCollection);
+            console.debug('METASYNAPSEChat.start called, new collection=', newCollection, 'current collection=', sessionCollection);
+            
+            // If switching to a different session, close the old connection first
+            if (connection && sessionCollection && newCollection !== sessionCollection) {
+                console.debug('Session collection changed from', sessionCollection, 'to', newCollection, '- closing old connection');
+                const oldConnection = connection;
+                connection = null;
+                sessionCollection = null;
+                oldConnection.stop().then(function () {
+                    console.debug('Old connection closed successfully');
+                }).catch(function (err) {
+                    console.error('Error closing old connection', err);
+                });
+            }
+
+            sessionCollection = newCollection;
+
             if (connection) {
-                console.debug('Existing SignalR connection found, setting session collection.');
+                console.debug('Existing SignalR connection found for same collection, updating session.');
                 return connection.invoke('SetSessionCollection', sessionCollection);
             }
 

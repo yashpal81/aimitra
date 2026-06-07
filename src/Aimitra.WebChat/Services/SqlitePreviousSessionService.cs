@@ -121,6 +121,26 @@ namespace METASYNAPSE.WebChat.Services
             tx.Commit();
         }
 
+        public async Task DeleteSessionAsync(string sessionName)
+        {
+            using var tx = _connection.BeginTransaction();
+            // Delete messages for this session
+            using (var cmd = _connection.CreateCommand())
+            {
+                cmd.CommandText = @"DELETE FROM previous_session_messages WHERE session_name = $name;";
+                cmd.Parameters.AddWithValue("$name", sessionName);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            // Delete the session itself
+            using (var cmd = _connection.CreateCommand())
+            {
+                cmd.CommandText = @"DELETE FROM previous_sessions WHERE name = $name;";
+                cmd.Parameters.AddWithValue("$name", sessionName);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            tx.Commit();
+        }
+
         public void Dispose()
         {
             try

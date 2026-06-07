@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using METASYNAPSE.Core.Interfaces;
 using METASYNAPSE.Core.Models;
 using METASYNAPSE.Services.Metadata;
-using METASYNAPSE.Services.OpenRouter;
 using METASYNAPSE.Services.Orchestration;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI; // Essential for AddOpenAIChatCompletion

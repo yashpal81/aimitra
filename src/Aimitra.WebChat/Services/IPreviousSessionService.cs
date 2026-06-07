@@ -1,7 +1,7 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Aimitra.WebChat.Services
+namespace METASYNAPSE.WebChat.Services
 {
     public interface IPreviousSessionService
     {
@@ -10,5 +10,7 @@ namespace Aimitra.WebChat.Services
         Task<string?> GetLastSessionNameAsync();
         Task<List<PreviousSessionMessage>> GetSessionMessagesAsync(string sessionName);
         Task AddMessageAsync(string sessionName, string? messageId, string user, string message, DateTime timestamp, bool isPartial = false);
+        Task DeleteSessionAsync(string sessionName);
     }
 }
+

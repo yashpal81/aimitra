@@ -1,6 +1,6 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
-namespace Aimitra.WebChat.Services
+namespace METASYNAPSE.WebChat.Services
 {
     public sealed record DocumentMemoryMatch(
         string Source,
@@ -242,18 +242,18 @@ namespace Aimitra.WebChat.Services
             {
                 if (!File.Exists(_statePath))
                 {
-                    return "aimitra";
+                    return "METASYNAPSE";
                 }
 
                 try
                 {
                     var json = File.ReadAllText(_statePath);
                     var state = JsonSerializer.Deserialize<Dictionary<string, string>>(json, _jsonOptions);
-                    return state?.GetValueOrDefault("lastCollection")?.Trim() ?? "aimitra";
+                    return state?.GetValueOrDefault("lastCollection")?.Trim() ?? "METASYNAPSE";
                 }
                 catch
                 {
-                    return "aimitra";
+                    return "METASYNAPSE";
                 }
             }
         }
@@ -296,7 +296,7 @@ namespace Aimitra.WebChat.Services
         private string GetCollectionName(string? collection)
         {
             var name = string.IsNullOrWhiteSpace(collection) ? GetLastCollection() : collection.Trim();
-            return string.IsNullOrWhiteSpace(name) ? "aimitra" : name;
+            return string.IsNullOrWhiteSpace(name) ? "METASYNAPSE" : name;
         }
 
         private string GetCollectionFolder(string collection)
@@ -431,3 +431,4 @@ namespace Aimitra.WebChat.Services
         }
     }
 }
+

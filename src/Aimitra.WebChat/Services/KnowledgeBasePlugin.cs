@@ -1,8 +1,8 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Text.Json;
 using Microsoft.SemanticKernel;
 
-namespace Aimitra.WebChat.Services
+namespace METASYNAPSE.WebChat.Services
 {
     public sealed class KnowledgeBasePlugin
     {
@@ -28,3 +28,4 @@ namespace Aimitra.WebChat.Services
         }
     }
 }
+

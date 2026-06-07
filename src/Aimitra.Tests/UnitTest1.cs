@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using Xunit;
 
-namespace Aimitra.Tests
+namespace METASYNAPSE.Tests
 {
     public class UnitTest1
     {
@@ -12,3 +12,4 @@ namespace Aimitra.Tests
         }
     }
 }
+

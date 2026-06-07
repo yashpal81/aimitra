@@ -1,15 +1,15 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Aimitra.Core.Interfaces;
-using Aimitra.Core.Models;
-using Aimitra.Services.Orchestration;
+using METASYNAPSE.Core.Interfaces;
+using METASYNAPSE.Core.Models;
+using METASYNAPSE.Services.Orchestration;
 
-namespace Aimitra.Services.Orchestration
+namespace METASYNAPSE.Services.Orchestration
 {
     /// <summary>
     /// Stateful multi-turn orchestrator that wraps <see cref="SemanticKernelOrchestrator"/>
@@ -338,3 +338,4 @@ namespace Aimitra.Services.Orchestration
         };
     }
 }
+

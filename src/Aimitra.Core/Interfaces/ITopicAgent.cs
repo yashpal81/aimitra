@@ -1,11 +1,11 @@
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
-using Aimitra.Core.Models;
+using METASYNAPSE.Core.Models;
 
-namespace Aimitra.Core.Interfaces
+namespace METASYNAPSE.Core.Interfaces
 {
     /// <summary>
-    /// Contract for every domain agent in the Aimitra topic-action framework.
+    /// Contract for every domain agent in the METASYNAPSE topic-action framework.
     ///
     /// Each implementation handles one <see cref="TopicName"/>, runs its scoped
     /// Semantic Kernel, and returns an <see cref="AgentTransition"/> that tells
@@ -54,3 +54,4 @@ namespace Aimitra.Core.Interfaces
             CancellationToken cancellationToken = default);
     }
 }
+

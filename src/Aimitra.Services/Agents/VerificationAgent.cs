@@ -1,18 +1,19 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Aimitra.Core.Interfaces;
-using Aimitra.Core.Models;
-//using Aimitra.SamplePlugins.Plugins;
-using Aimitra.Security;
-using Aimitra.Security.Guardrails;
-using Aimitra.Services.Plugins;
+using METASYNAPSE.Core.Interfaces;
+using METASYNAPSE.Core.Models;
+//using METASYNAPSE.SamplePlugins.Plugins;
+using METASYNAPSE.Security;
+using METASYNAPSE.Security.Guardrails;
+using METASYNAPSE.Services.Plugins;
+using METASYNAPSE.Services.RateLimiting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 
-namespace Aimitra.Services.Agents
+namespace METASYNAPSE.Services.Agents
 {
     /// <summary>
     /// Verification domain agent.
@@ -118,6 +119,7 @@ namespace Aimitra.Services.Agents
             ChatMessageContent result;
             try
             {
+                await LlmRateLimiter.WaitForAvailabilityAsync(cancellationToken).ConfigureAwait(false);
                 result = await kernel
                     .GetRequiredService<IChatCompletionService>()
                     .GetChatMessageContentAsync(chatHistory, settings, kernel, cancellationToken)
@@ -193,3 +195,4 @@ namespace Aimitra.Services.Agents
         }
     }
 }
+

@@ -1,8 +1,9 @@
 ﻿using System;
 
-namespace Aimitra.Services
+namespace METASYNAPSE.Services
 {
     public class Class1
     {
     }
 }
+

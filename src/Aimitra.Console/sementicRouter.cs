@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.SemanticKernel.Embeddings;
 using Microsoft.SemanticKernel.Connectors.Google; // Using Google AI Studio
 
-namespace Aimitra.ConsoleApp.Routing
+namespace METASYNAPSE.ConsoleApp.Routing
 {
     // 1. Define the structure for a Semantic Route
     public class SemanticRoute

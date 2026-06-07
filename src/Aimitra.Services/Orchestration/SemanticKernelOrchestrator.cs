@@ -1,43 +1,28 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Aimitra.Core.Models;
-using Aimitra.Services.Interfaces;
+using METASYNAPSE.Core.Models;
+using METASYNAPSE.Services.Interfaces;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using Microsoft.SemanticKernel.ChatCompletion;
-using Aimitra.Core.Interfaces;
-using Aimitra.Services.Metadata;
+using METASYNAPSE.Core.Interfaces;
+using METASYNAPSE.Services.Metadata;
+using METASYNAPSE.Services.RateLimiting;
 using System.ClientModel;
 using System.Text.RegularExpressions;
-using Aimitra.Services.Plugins;
-using Aimitra.Security;
-using Aimitra.Security.Guardrails;
+using METASYNAPSE.Services.Plugins;
+using METASYNAPSE.Security;
+using METASYNAPSE.Security.Guardrails;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
 
-namespace Aimitra.Services.Orchestration
+namespace METASYNAPSE.Services.Orchestration
 {
-    public class XLamStep
-{
-    public int step { get; set; }
-    public string content { get; set; }
-}
-
-// Helper class for JSON parsing
-public class ActionCall
-{
-    public string PluginName { get; set; }
-    public string FunctionName { get; set; }
-    public Dictionary<string, object> Arguments { get; set; }
-    
-    public Dictionary<string, object> Parameters { get; set; }
-}
-
     public sealed class SemanticKernelOrchestrator
     {
         private const int MaxIterations = 1;
@@ -162,6 +147,7 @@ public class ActionCall
                 ChatMessageContent result;
                 try
                 {
+                    await LlmRateLimiter.WaitForAvailabilityAsync(cancellationToken).ConfigureAwait(false);
                     result = await chat.GetChatMessageContentAsync(chatHistory, executionSettings: settings, kernel: kernel, cancellationToken: cancellationToken).ConfigureAwait(false);
                 }
                 catch (GuardrailViolationException gex)
@@ -169,6 +155,12 @@ public class ActionCall
                     Console.WriteLine($"[Guardrail] Request blocked: {gex.Message}");
                     return new ReasoningResult(string.Empty, string.Empty,
                         $"Request blocked by safety guardrail [{gex.Result.ViolationType}]: {gex.Result.Reason}", history);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("[Reasoning] LLM call failed in GenerateSqlFromQuestionAsync.");
+                    Console.WriteLine(FormatExceptionDiagnostics(ex));
+                    throw;
                 }
 
                 rawResponse = result?.Content ?? string.Empty;
@@ -257,11 +249,21 @@ public class ActionCall
             };
 
             // SK's Auto function-call loop runs until the LLM stops calling functions
-            await chat.GetChatMessageContentAsync(
-                history,
-                executionSettings: settings,
-                kernel: routingKernel,
-                cancellationToken: cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await LlmRateLimiter.WaitForAvailabilityAsync(cancellationToken).ConfigureAwait(false);
+                await chat.GetChatMessageContentAsync(
+                    history,
+                    executionSettings: settings,
+                    kernel: routingKernel,
+                    cancellationToken: cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[TopicRouter] LLM call failed in SelectTopicsAsync.");
+                Console.WriteLine(FormatExceptionDiagnostics(ex));
+                throw;
+            }
 
             // Preserve call order
             return _topics
@@ -288,7 +290,7 @@ public class ActionCall
             CancellationToken cancellationToken = default)
         {
             Console.WriteLine($"Running with topic with 20sec wait: {topic.Name}");
-            await Task.Delay(20000);
+            await Task.Delay(30000);
             if (topic == null) throw new ArgumentNullException(nameof(topic));
 
             var maskingEngine = new PiiMaskingEngine(_presidioEndpoint);
@@ -330,6 +332,7 @@ public class ActionCall
 
             try
             {
+                await LlmRateLimiter.WaitForAvailabilityAsync(cancellationToken).ConfigureAwait(false);
                 var result = await chat.GetChatMessageContentAsync(
                     chatHistory,
                     executionSettings: settings,
@@ -343,6 +346,12 @@ public class ActionCall
             {
                 Console.WriteLine($"[Guardrail] Topic '{topic.Name}' blocked: {gex.Message}");
                 return $"Request blocked by safety guardrail [{gex.Result.ViolationType}]: {gex.Result.Reason}";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Topic] LLM call failed in RunWithTopicAsync for topic '{topic.Name}'.");
+                Console.WriteLine(FormatExceptionDiagnostics(ex));
+                return $"(assistant error: {ex.Message})";
             }
         }
 
@@ -391,7 +400,7 @@ public class ActionCall
 
             for (int i = 0; i < topics.Count; i++)
             {
-                await Task.Delay(20000);
+                await Task.Delay(30000);
                 var topic = topics[i];
                 Console.WriteLine($"[TopicRouter] Step {i + 1}/{topics.Count}: '{topic.Name}'");
 
@@ -465,6 +474,7 @@ public class ActionCall
 
             try
             {
+                await LlmRateLimiter.WaitForAvailabilityAsync(cancellationToken).ConfigureAwait(false);
                 var result = await chat.GetChatMessageContentAsync(
                     history,
                     executionSettings: settings,
@@ -476,10 +486,36 @@ public class ActionCall
             catch (Exception ex)
             {
                 Console.WriteLine($"[Synthesis] Failed: {ex.Message}");
+                Console.WriteLine(FormatExceptionDiagnostics(ex));
                 // Fallback: concatenate step results
                 return string.Join("\n\n", stepResults.Select(r => $"{r.TopicName}: {r.Result}"));
             }
         }
 
+        private static string FormatExceptionDiagnostics(Exception ex)
+        {
+            var sb = new StringBuilder();
+            var current = ex;
+            var level = 0;
+
+            while (current != null)
+            {
+                sb.AppendLine($"[{level}] {current.GetType().FullName}: {current.Message}");
+                if (!string.IsNullOrWhiteSpace(current.StackTrace))
+                {
+                    sb.AppendLine(current.StackTrace);
+                }
+                current = current.InnerException;
+                level++;
+
+                if (current != null)
+                {
+                    sb.AppendLine("--- Inner exception ---");
+                }
+            }
+
+            return sb.ToString();
+        }
     }
 }
+

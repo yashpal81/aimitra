@@ -1,4 +1,4 @@
-namespace Aimitra.WebChat.Services;
+﻿namespace METASYNAPSE.WebChat.Services;
 
 #pragma warning disable SKEXP0050   // TextChunker is experimental in SK 1.x but stable enough for production use
 using Microsoft.SemanticKernel.Text;
@@ -88,7 +88,7 @@ public sealed class DocumentVectorStoreService : IDocumentMemoryService
     {
         if (string.IsNullOrWhiteSpace(question))
             throw new ArgumentException("Question is required.", nameof(question));
-
+        
         var collectionName = ResolveCollection(collection);
         SetLastCollection(collectionName);
 
@@ -155,7 +155,7 @@ public sealed class DocumentVectorStoreService : IDocumentMemoryService
     // Collection state
     // ──────────────────────────────────────────────────────────────────────────
 
-    public string GetLastCollection() => _store.GetState("lastCollection", "aimitra");
+    public string GetLastCollection() => _store.GetState("lastCollection", "METASYNAPSE");
 
     public void SetLastCollection(string collection) =>
         _store.SetState("lastCollection", ResolveCollection(collection));
@@ -223,7 +223,7 @@ public sealed class DocumentVectorStoreService : IDocumentMemoryService
     private string ResolveCollection(string? collection)
     {
         var name = string.IsNullOrWhiteSpace(collection) ? GetLastCollection() : collection.Trim();
-        return string.IsNullOrWhiteSpace(name) ? "aimitra" : name;
+        return string.IsNullOrWhiteSpace(name) ? "METASYNAPSE" : name;
     }
 
     private static DocumentMemoryEntry BuildEntry(string filePath, string collection)
@@ -258,3 +258,4 @@ public sealed class DocumentVectorStoreService : IDocumentMemoryService
             _                 => "application/octet-stream"
         };
 }
+

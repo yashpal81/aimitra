@@ -1,24 +1,26 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Google.Apis;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
 using Google.Apis.Auth.OAuth2.Requests;
 using Google.Apis.Drive.v3;
+using Google.Apis.Requests;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using Microsoft.SemanticKernel;
 using Microsoft.Extensions.Internal;
 using Google.Apis.Core;
-using Google.Apis.Auth.OAuth2.Requests;
-using Google.Apis.Auth.OAuth2;
 
-namespace Aimitra.SamplePlugins.Plugins
+namespace METASYNAPSE.SamplePlugins.Plugins
 {
     public class CustomMockClock : Google.Apis.Util.IClock
 {
@@ -164,6 +166,55 @@ namespace Aimitra.SamplePlugins.Plugins
             return $"Google Drive is authorized. Access token expires in {token.ExpiresInSeconds ?? 0} seconds.";
         }
 
+        private static async Task<T> ExecuteDriveRequestWithRetryAsync<T>(ClientServiceRequest<T> request, int maxAttempts = 3, CancellationToken cancellationToken = default)
+        {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+
+            var delayMs = 1000;
+
+            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                try
+                {
+                    return await request.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (IsGoogleDriveRateLimitException(ex))
+                {
+                    if (attempt == maxAttempts)
+                    {
+                        throw;
+                    }
+
+                    await Task.Delay(TimeSpan.FromMilliseconds(delayMs), cancellationToken).ConfigureAwait(false);
+                    delayMs *= 2;
+                }
+            }
+
+            throw new InvalidOperationException("Google Drive request failed after retrying due to rate limiting.");
+        }
+
+        private static bool IsGoogleDriveRateLimitException(Exception exception)
+        {
+            if (exception == null) return false;
+
+            if (exception is HttpRequestException httpEx && (httpEx.StatusCode == HttpStatusCode.TooManyRequests || httpEx.StatusCode == HttpStatusCode.ServiceUnavailable))
+            {
+                return true;
+            }
+
+            var message = exception.Message ?? string.Empty;
+            if (message.Contains("429") ||
+                message.Contains("TooManyRequests", StringComparison.OrdinalIgnoreCase) ||
+                message.Contains("Too Many Requests", StringComparison.OrdinalIgnoreCase) ||
+                message.Contains("rate limit", StringComparison.OrdinalIgnoreCase) ||
+                message.Contains("quota", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return exception.InnerException != null && IsGoogleDriveRateLimitException(exception.InnerException);
+        }
+
         [KernelFunction, Description("Lists the first set of files from the connected Google Drive account.")]
         public async Task<string> ListGoogleDriveFiles(string query = "trashed=false", int pageSize = 20)
         {
@@ -171,7 +222,7 @@ namespace Aimitra.SamplePlugins.Plugins
             using var service = new DriveService(new BaseClientService.Initializer
             {
                 HttpClientInitializer = credential,
-                ApplicationName = "Aimitra Google Drive Plugin"
+                ApplicationName = "METASYNAPSE Google Drive Plugin"
             });
 
             var request = service.Files.List();
@@ -179,7 +230,7 @@ namespace Aimitra.SamplePlugins.Plugins
             request.PageSize = Math.Clamp(pageSize, 1, 100);
             request.Fields = "nextPageToken, files(id, name, mimeType, webViewLink, modifiedTime)";
 
-            var response = await request.ExecuteAsync().ConfigureAwait(false);
+            var response = await ExecuteDriveRequestWithRetryAsync(request).ConfigureAwait(false);
             if (response.Files == null || response.Files.Count == 0)
             {
                 return "No files were found in Google Drive for the current query.";
@@ -196,3 +247,4 @@ namespace Aimitra.SamplePlugins.Plugins
         }
     }
 }
+

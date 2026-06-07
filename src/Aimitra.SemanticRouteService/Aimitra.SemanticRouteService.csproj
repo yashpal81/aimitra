@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.21.0-alpha" />
@@ -6,7 +6,9 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <NoWarn>$(NoWarn);SKEXP0001;SKEXP0050;SKEXP0010;SKEXP0070</NoWarn>
+        <AssemblyName>MetaSynapse.SemanticRouteService</AssemblyName>
+    <RootNamespace>MetaSynapse.SemanticRouteService</RootNamespace>
+<NoWarn>$(NoWarn);SKEXP0001;SKEXP0050;SKEXP0010;SKEXP0070</NoWarn>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -14,5 +16,6 @@
   </PropertyGroup>
 
 </Project>
+
 
 

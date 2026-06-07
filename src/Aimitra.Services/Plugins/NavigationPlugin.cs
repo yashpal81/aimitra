@@ -1,7 +1,7 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using Microsoft.SemanticKernel;
 
-namespace Aimitra.Services.Plugins
+namespace METASYNAPSE.Services.Plugins
 {
     /// <summary>
     /// Universal navigation tool registered in every scoped agent kernel.
@@ -59,3 +59,4 @@ namespace Aimitra.Services.Plugins
         public bool HasPendingNavigation => _pendingNextTopic is not null;
     }
 }
+

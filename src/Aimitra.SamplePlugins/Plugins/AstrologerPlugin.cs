@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using Microsoft.SemanticKernel;
 
-namespace Aimitra.SamplePlugins.Plugins
+namespace METASYNAPSE.SamplePlugins.Plugins
 {
     public sealed class AstrologerPlugin
     {
@@ -24,3 +24,4 @@ namespace Aimitra.SamplePlugins.Plugins
 
     }
 }
+

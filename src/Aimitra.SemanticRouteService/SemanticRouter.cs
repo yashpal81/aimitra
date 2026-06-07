@@ -1,13 +1,13 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Aimitra.SemanticRouteService.Models;
+using METASYNAPSE.SemanticRouteService.Models;
 
 #pragma warning disable SKEXP0001
 using Microsoft.SemanticKernel.Embeddings;
 #pragma warning restore SKEXP0001
-namespace Aimitra.SemanticRouteService
+namespace METASYNAPSE.SemanticRouteService
 {
     public class SemanticRouter
     {
@@ -82,3 +82,4 @@ namespace Aimitra.SemanticRouteService
         }
     }
 }
+

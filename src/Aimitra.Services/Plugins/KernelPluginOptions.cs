@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Aimitra.Services.Plugins
+namespace METASYNAPSE.Services.Plugins
 {
     public sealed class KernelPluginOptions
     {
@@ -15,7 +15,7 @@ namespace Aimitra.Services.Plugins
 
         public static KernelPluginOptions FromEnvironment()
         {
-            var rawPaths = Environment.GetEnvironmentVariable("AIMITRA_KERNEL_PLUGIN_ASSEMBLIES");
+            var rawPaths = Environment.GetEnvironmentVariable("METASYNAPSE_KERNEL_PLUGIN_ASSEMBLIES");
             if (string.IsNullOrWhiteSpace(rawPaths))
             {
                 return new KernelPluginOptions(Array.Empty<string>());
@@ -31,3 +31,4 @@ namespace Aimitra.Services.Plugins
         }
     }
 }
+

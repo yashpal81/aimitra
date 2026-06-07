@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
-namespace Aimitra.Services.Orchestration
+namespace METASYNAPSE.Services.Orchestration
 {
     public sealed class ReasoningResult
     {
@@ -24,3 +24,4 @@ namespace Aimitra.Services.Orchestration
         public bool HasResult => !string.IsNullOrWhiteSpace(SqlQuery);
     }
 }
+

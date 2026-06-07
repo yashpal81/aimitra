@@ -1,15 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 <ItemGroup>
   <PackageReference Include="Microsoft.SemanticKernel" Version="1.21.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.21.0-alpha" />
 </ItemGroup>
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <NoWarn>$(NoWarn);SKEXP0001;SKEXP0050;SKEXP0010;SKEXP0070</NoWarn>
+        <AssemblyName>MetaSynapse.Security</AssemblyName>
+    <RootNamespace>MetaSynapse.Security</RootNamespace>
+<NoWarn>$(NoWarn);SKEXP0001;SKEXP0050;SKEXP0010;SKEXP0070</NoWarn>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
 </Project>
+
 
 

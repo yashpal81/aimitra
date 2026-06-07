@@ -1,17 +1,17 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using Aimitra.ConsoleApp.Configuration;
-using Aimitra.Core.Interfaces;
-using Aimitra.Core.Models;
-using Aimitra.SamplePlugins.Plugins;
-using Aimitra.SemanticRouteService;
-using Aimitra.Services.Metadata;
-using Aimitra.Services.Orchestration;
-using Aimitra.Services.Plugins;
+using METASYNAPSE.ConsoleApp.Configuration;
+using METASYNAPSE.Core.Interfaces;
+using METASYNAPSE.Core.Models;
+using METASYNAPSE.SamplePlugins.Plugins;
+using METASYNAPSE.SemanticRouteService;
+using METASYNAPSE.Services.Metadata;
+using METASYNAPSE.Services.Orchestration;
+using METASYNAPSE.Services.Plugins;
 #pragma warning disable SKEXP0001
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -21,7 +21,7 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 
 
 
-namespace Aimitra.ConsoleApp
+namespace METASYNAPSE.ConsoleApp
 {
     class Program
     {
@@ -29,7 +29,7 @@ namespace Aimitra.ConsoleApp
 
         static async Task Main(string[] args)
         {
-            var environmentName = Environment.GetEnvironmentVariable("AIMITRA_ENVIRONMENT")?.Trim();
+            var environmentName = Environment.GetEnvironmentVariable("METASYNAPSE_ENVIRONMENT")?.Trim();
             EnvFileLoader.Load(environmentName);
 
             var apiKey = Environment.GetEnvironmentVariable("API_KEY");
@@ -131,7 +131,7 @@ namespace Aimitra.ConsoleApp
             // --- Multi-turn conversation loop ---
             Console.WriteLine();
             Console.WriteLine($"Session: {orchestrator.State.SessionId}");
-            Console.WriteLine("Aimitra ready. Type a message and press Enter. Leave blank to exit.");
+            Console.WriteLine("METASYNAPSE ready. Type a message and press Enter. Leave blank to exit.");
             Console.WriteLine(new string('-', 60));
 
             while (true)
@@ -306,3 +306,4 @@ namespace Aimitra.ConsoleApp
 
     }
 }
+

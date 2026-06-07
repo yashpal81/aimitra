@@ -1,12 +1,12 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Aimitra.Core.Interfaces;
-using Aimitra.Core.Models;
+using METASYNAPSE.Core.Interfaces;
+using METASYNAPSE.Core.Models;
 using Microsoft.Data.SqlClient;
 
-namespace Aimitra.Services.Metadata
+namespace METASYNAPSE.Services.Metadata
 {
     public sealed class SqlServerMetadataService : IDbMetadataService
     {
@@ -260,3 +260,4 @@ where fk.CONSTRAINT_TYPE = 'FOREIGN KEY'";
         }
     }
 }
+

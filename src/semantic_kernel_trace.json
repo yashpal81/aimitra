@@ -1,0 +1,32 @@
+[
+  {
+    "responses": [
+      {
+        "planResponse": {
+          "plan": {
+            "goal": "Semantic Kernel Orchestration Trace",
+            "steps": [
+              {
+                "stepNumber": 1,
+                "name": "Tool Execution Block",
+                "actions": [
+                  {
+                    "actionName": "SemanticKernelFunction",
+                    "status": "COMPLETED",
+                    "type": "TOOL_EXECUTION",
+                    "reasoning": "Executing native Semantic Kernel tracking spans.",
+                    "properties": {
+                      "toolName": "SampleSKFunction",
+                      "inputs": { "query": "test" },
+                      "outputs": { "response": "success" }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+]

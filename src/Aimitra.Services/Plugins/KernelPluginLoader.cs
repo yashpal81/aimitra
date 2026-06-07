@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.SemanticKernel;
 
-namespace Aimitra.Services.Plugins
+namespace METASYNAPSE.Services.Plugins
 {
     public sealed class KernelPluginLoader
     {
@@ -147,3 +147,4 @@ namespace Aimitra.Services.Plugins
         }
     }
 }
+

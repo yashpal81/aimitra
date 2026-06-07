@@ -1,19 +1,19 @@
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Aimitra.WebChat.Hubs;
-using Aimitra.WebChat.Configuration;
-using Aimitra.Services.Orchestration;
-using Aimitra.Services.Plugins;
-using Aimitra.SamplePlugins.Plugins;
+using METASYNAPSE.WebChat.Hubs;
+using METASYNAPSE.WebChat.Configuration;
+using METASYNAPSE.Services.Orchestration;
+using METASYNAPSE.Services.Plugins;
+using METASYNAPSE.SamplePlugins.Plugins;
 using Microsoft.SemanticKernel;
 using Microsoft.KernelMemory;
 using Microsoft.KernelMemory.AI.OpenAI;
-using Aimitra.WebChat.Services;
+using METASYNAPSE.WebChat.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var environmentName = "local"; // "Environment.GetEnvironmentVariable("AIMITRA_ENVIRONMENT")?.Trim();"
+var environmentName = "local"; // "Environment.GetEnvironmentVariable("METASYNAPSE_ENVIRONMENT")?.Trim();"
 EnvFileLoader.Load(environmentName);
 
 // Read runtime configuration from environment (same vars used by console app)
@@ -31,6 +31,7 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<AgentDefinitionStore>();
 builder.Services.AddSingleton<AgentDefinitionLoader>();
+builder.Services.AddSingleton<ConnectionDiagnosticsService>();
 
 // ── Document memory: Gemini embeddings + SQLite vector store ─────────────────
 var knowledgeDbPath = Path.Combine(AppContext.BaseDirectory, "App_Data", "knowledge-base", "vectors.db");
@@ -137,7 +138,7 @@ app.MapGet("/google-drive/callback", async (HttpContext context) =>
     try
     {
         var redirectUri = $"{context.Request.Scheme}://{context.Request.Host}/google-drive/callback";
-        var plugin = new Aimitra.SamplePlugins.Plugins.GoogleDrivePlugin();
+        var plugin = new METASYNAPSE.SamplePlugins.Plugins.GoogleDrivePlugin();
         var result = await plugin.CompleteGoogleDriveOAuth(code, redirectUri).ConfigureAwait(false);
 
         context.Response.ContentType = "text/html; charset=utf-8";
@@ -150,11 +151,21 @@ app.MapGet("/google-drive/callback", async (HttpContext context) =>
     }
 });
 
+app.MapRazorPages();
 app.MapBlazorHub();
 app.MapHub<ChatHub>("/chathub");
 app.MapFallbackToPage("/_Host");
+
+// Diagnostic endpoint: list active SignalR connections and counts per collection
+app.MapGet("/diagnostics/signalr/connections", (ConnectionDiagnosticsService diag) =>
+{
+    var connections = diag.GetAllConnections();
+    var counts = diag.GetCountsByCollection();
+    return Results.Json(new { connections, counts });
+});
 
 
 
 
 app.Run();
+

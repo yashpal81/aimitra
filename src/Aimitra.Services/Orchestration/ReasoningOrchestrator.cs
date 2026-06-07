@@ -1,14 +1,15 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Aimitra.Core.Models;
-using Aimitra.Services.Interfaces;
+using METASYNAPSE.Core.Models;
+using METASYNAPSE.Services.Interfaces;
+using METASYNAPSE.Services.RateLimiting;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 
-namespace Aimitra.Services.Orchestration
+namespace METASYNAPSE.Services.Orchestration
 {
 
 
@@ -109,6 +110,7 @@ public sealed class MultiModelKernelService
 
         // Passing _kernel enables Semantic Kernel to invoke tools and continue
         // the ReAct loop automatically until the model returns a final answer.
+        await LlmRateLimiter.WaitForAvailabilityAsync(cancellationToken).ConfigureAwait(false);
         var response = await chatCompletion.GetChatMessageContentAsync(
             history,
             executionSettings: settings,
@@ -133,6 +135,7 @@ public sealed class MultiModelKernelService
         var history = new ChatHistory();
         history.AddUserMessage(prompt);
 
+        await LlmRateLimiter.WaitForAvailabilityAsync(cancellationToken).ConfigureAwait(false);
         var response = await chatCompletion.GetChatMessageContentAsync(
             history,
             cancellationToken: cancellationToken);

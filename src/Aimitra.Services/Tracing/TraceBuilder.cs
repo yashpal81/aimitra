@@ -1,16 +1,16 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Aimitra.Core.Models;
+using METASYNAPSE.Core.Models;
 
-namespace Aimitra.Services.Tracing
+namespace METASYNAPSE.Services.Tracing
 {
-    // ── JSON models (match the AimitraLens trace format exactly) ─────────────
+    // ── JSON models (match the METASYNAPSELens trace format exactly) ─────────────
 
-    public sealed class AimitraTrace
+    public sealed class METASYNAPSETrace
     {
         [JsonPropertyName("traceId")]
         public string TraceId { get; init; } = Guid.NewGuid().ToString("N");
@@ -164,8 +164,8 @@ namespace Aimitra.Services.Tracing
 
     /// <summary>
     /// Converts the <see cref="AgentTransition"/> log produced by
-    /// <c>TopicOrchestrator</c> into an <see cref="AimitraTrace"/> JSON document
-    /// that can be dropped straight into AimitraLens for visual debugging.
+    /// <c>TopicOrchestrator</c> into an <see cref="METASYNAPSETrace"/> JSON document
+    /// that can be dropped straight into METASYNAPSELens for visual debugging.
     ///
     /// Usage:
     /// <code>
@@ -176,10 +176,10 @@ namespace Aimitra.Services.Tracing
     public static class TraceBuilder
     {
         /// <summary>
-        /// Builds a complete <see cref="AimitraTrace"/> from the transition log
+        /// Builds a complete <see cref="METASYNAPSETrace"/> from the transition log
         /// accumulated by a <c>TopicOrchestrator</c> session.
         /// </summary>
-        public static AimitraTrace Build(
+        public static METASYNAPSETrace Build(
             IReadOnlyList<AgentTransition> transitions,
             ConversationState state,
             string? traceId = null)
@@ -298,7 +298,7 @@ namespace Aimitra.Services.Tracing
                 AgentsInvolved   = nodes.Where(n => n.Type == "agent").Select(n => n.Id).ToList()
             };
 
-            return new AimitraTrace
+            return new METASYNAPSETrace
             {
                 TraceId   = traceId ?? Guid.NewGuid().ToString("N"),
                 Timestamp = DateTime.UtcNow.ToString("O"),
@@ -309,7 +309,7 @@ namespace Aimitra.Services.Tracing
         }
 
         /// <summary>Serialises a trace to indented JSON.</summary>
-        public static string ToJson(AimitraTrace trace) =>
+        public static string ToJson(METASYNAPSETrace trace) =>
             JsonSerializer.Serialize(trace, new JsonSerializerOptions
             {
                 WriteIndented = true,
@@ -406,3 +406,4 @@ namespace Aimitra.Services.Tracing
         }
     }
 }
+

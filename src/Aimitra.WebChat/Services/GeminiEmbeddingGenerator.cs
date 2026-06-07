@@ -1,8 +1,8 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Net;
 using System.Text.Json.Serialization;
 
-namespace Aimitra.WebChat.Services;
+namespace METASYNAPSE.WebChat.Services;
 
 /// <summary>
 /// Calls the Google Gemini text-embedding-004 REST API to produce float32 embeddings.
@@ -44,7 +44,7 @@ public sealed class GeminiEmbeddingGenerator
         };
 
         const int maxAttempts = 3;
-        var delayMs = 6000;
+        var delayMs = 10000;
 
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
@@ -87,3 +87,4 @@ public sealed class GeminiEmbeddingGenerator
     private sealed record GeminiEmbedValues(
         [property: JsonPropertyName("values")] float[]? Values);
 }
+

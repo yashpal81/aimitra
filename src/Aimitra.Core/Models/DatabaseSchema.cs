@@ -1,7 +1,7 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
 
-namespace Aimitra.Core.Models
+namespace METASYNAPSE.Core.Models
 {
     public sealed class DatabaseSchema
     {
@@ -136,3 +136,4 @@ namespace Aimitra.Core.Models
         public string ConstraintName { get; }
     }
 }
+

@@ -1,6 +1,6 @@
-@page "/knowledge-base"
+﻿@page "/knowledge-base"
 @using Microsoft.AspNetCore.Components.Forms
-@inject Aimitra.WebChat.Services.IDocumentMemoryService DocumentMemory
+@inject METASYNAPSE.WebChat.Services.IDocumentMemoryService DocumentMemory
 
 <div class="min-h-[calc(100vh-2rem)] bg-slate-100 text-slate-900">
     <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
@@ -9,7 +9,7 @@
             <div class="grid gap-0 lg:grid-cols-[1fr_1fr]">
                 <section class="border-b border-slate-200 p-6 lg:border-b-0 lg:border-r">
                     <div class="mb-6">
-                        <p class="text-sm font-medium uppercase tracking-[0.25em] text-amber-700">Aimitra Knowledge Base</p>
+                        <p class="text-sm font-medium uppercase tracking-[0.25em] text-amber-700">METASYNAPSE Knowledge Base</p>
                         <h3 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Collections and files</h3>
                         <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
                             On load, this view shows the available collections and the files inside the selected collection.
@@ -283,15 +283,15 @@
 }
 
 @code {
-    private string collectionName = "aimitra";
+    private string collectionName = "METASYNAPSE";
     private string question = string.Empty;
     private string pastedText = string.Empty;
     private string textItemName = string.Empty;
     private string namedTextContent = string.Empty;
     private string status = string.Empty;
     private bool showManagePanel;
-    private IReadOnlyList<Aimitra.WebChat.Services.DocumentMemoryMatch> matches = Array.Empty<Aimitra.WebChat.Services.DocumentMemoryMatch>();
-    private IReadOnlyList<Aimitra.WebChat.Services.DocumentMemoryEntry> documents = Array.Empty<Aimitra.WebChat.Services.DocumentMemoryEntry>();
+    private IReadOnlyList<METASYNAPSE.WebChat.Services.DocumentMemoryMatch> matches = Array.Empty<METASYNAPSE.WebChat.Services.DocumentMemoryMatch>();
+    private IReadOnlyList<METASYNAPSE.WebChat.Services.DocumentMemoryEntry> documents = Array.Empty<METASYNAPSE.WebChat.Services.DocumentMemoryEntry>();
     private IReadOnlyList<string> availableCollections = Array.Empty<string>();
     private IBrowserFile? selectedFile;
 
@@ -483,3 +483,4 @@
         await LoadDocuments();
     }
 }
+

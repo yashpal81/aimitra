@@ -1,6 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace Aimitra.WebChat.Models
+namespace METASYNAPSE.WebChat.Models
 {
     public class KernelFunctionOption
     {
@@ -51,3 +51,4 @@ namespace Aimitra.WebChat.Models
         public string Notes { get; set; } = string.Empty;
     }
 }
+

@@ -1,8 +1,8 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 
-namespace Aimitra.WebChat.Services;
+namespace METASYNAPSE.WebChat.Services;
 
 /// <summary>
 /// SQLite-backed document and vector store.
@@ -298,7 +298,7 @@ public sealed class SqliteVecDocumentStore : IDisposable
     // State (last collection)
     // ──────────────────────────────────────────────────────────────────────────
 
-    public string GetState(string key, string defaultValue = "aimitra")
+    public string GetState(string key, string defaultValue = "METASYNAPSE")
     {
         using var conn = Open();
         using var cmd  = conn.CreateCommand();
@@ -392,3 +392,4 @@ public sealed record ChunkMatch(
     string Title,
     string FileName,
     double Score);
+

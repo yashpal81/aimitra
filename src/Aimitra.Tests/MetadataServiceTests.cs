@@ -1,10 +1,10 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Aimitra.Core.Models;
-using Aimitra.Services.Metadata;
+using METASYNAPSE.Core.Models;
+using METASYNAPSE.Services.Metadata;
 using Xunit;
 
-namespace Aimitra.Tests
+namespace METASYNAPSE.Tests
 {
     public class MetadataServiceTests
     {
@@ -37,3 +37,4 @@ namespace Aimitra.Tests
         }
     }
 }
+

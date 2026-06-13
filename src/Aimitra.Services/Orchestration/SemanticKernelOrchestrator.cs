@@ -81,10 +81,10 @@ namespace METASYNAPSE.Services.Orchestration
                     {
                     MaxTokens = 1000,
                     Temperature = 0.7,
-                    ModelId = "gpt-4",
+                    ModelId = _model,
                     //FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
-                    ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
-                };
+                ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
+            };
             string provider = "OpenAI";//"openrouter";
 
             // Instantiate the engine
@@ -98,7 +98,7 @@ namespace METASYNAPSE.Services.Orchestration
             // Always-on guardrails: content safety + prompt injection — registered at every filter point
             GuardrailService.Register(builder);
 
-            var kernel =builder.AddOpenAIChatCompletion(_model, _endpoint, _apiKey, string.Empty,provider , null).Build();
+            var kernel = builder.AddOpenAIChatCompletion(_model, _endpoint, _apiKey, string.Empty, provider, null).Build();
             Console.WriteLine("Kernel built with OpenAI Chat Completion service.");
 
             // Expose guardrails as LLM-callable tools (matches tools_sent in every agent step of the trace)
@@ -201,13 +201,26 @@ namespace METASYNAPSE.Services.Orchestration
             string userPrompt,
             CancellationToken cancellationToken = default)
         {
+            Console.WriteLine($"Selecting topics for user prompt: {userPrompt}");   
+            Console.WriteLine($"Available topics for routing: {(_topics.Count > 0 ? string.Join(", ", _topics.Select(t => t.Name)) : "none")}    ");
+            
             if (_topics.Count == 0) return Array.Empty<Topic>();
 
             var selectedNames = new List<string>();
 
             // Routing kernel — LLM + one KernelFunction per topic, no domain tools
             var builder = Kernel.CreateBuilder();
+            // Instantiate the engine
+            var maskingEngine = new PiiMaskingEngine(_presidioEndpoint);
+
+            // Register as both the INBOUND and OUTBOUND filter interceptor
+            builder.Services.AddSingleton<IFunctionInvocationFilter>(maskingEngine);
+            builder.Services.AddSingleton<IAutoFunctionInvocationFilter>(maskingEngine);
+            builder.Services.AddSingleton<IPromptRenderFilter>(maskingEngine);
+
+            // Always-on guardrails: content safety + prompt injection — registered at every filter point
             GuardrailService.Register(builder);
+            
             var routingKernel = builder
                 .AddOpenAIChatCompletion(_model, _endpoint, _apiKey, string.Empty, "OpenAI", null)
                 .Build();
@@ -216,12 +229,14 @@ namespace METASYNAPSE.Services.Orchestration
             var routingFunctions = new List<KernelFunction>();
             foreach (var topic in _topics)
             {
+                Console.WriteLine($"Processing topic: {topic.Name}");
                 var capturedName = topic.Name;
                 routingFunctions.Add(KernelFunctionFactory.CreateFromMethod(
                     method:       () => { if (!selectedNames.Contains(capturedName)) selectedNames.Add(capturedName); return capturedName; },
-                    functionName: Regex.Replace(capturedName, @"[^a-zA-Z0-9_]", "_"),
+                    functionName:  Regex.Replace(capturedName, @"[^a-zA-Z0-9_]", "_").Substring(0, Math.Min(capturedName.Length, 128)-1),
                     description:  topic.Description));
             }
+            Console.WriteLine($"Registering routing functions for topics: {string.Join(", ", routingFunctions.Select(f => f.Name))}");
 
             routingKernel.Plugins.Add(
                 KernelPluginFactory.CreateFromFunctions("TopicRouter",
@@ -230,16 +245,11 @@ namespace METASYNAPSE.Services.Orchestration
 
             var chat = routingKernel.GetRequiredService<IChatCompletionService>();
             var history = new ChatHistory();
-            history.AddSystemMessage("You are a strict topic router.\n" +
-                "Only route requests to the registered topics provided as tools.\n" +
-                "Do not answer from general model knowledge, training data, or guesswork.\n" +
-                "If no registered topic can handle the request, make no function call.\n" +
-                "• If the request can be answered by a SINGLE topic, call that one function.\n" +
-                "• If the request SPANS multiple topics (e.g. look up data from a database " +
-                "AND THEN use that result for a prediction or other action), call ALL required " +
-                "topic functions IN THE ORDER they must be executed — the output of each step " +
-                "feeds into the next.\n" +
-                "Do NOT produce any text — only function calls.");
+            history.AddSystemMessage(
+                "You are a topic selector. Choose the single function whose description best matches the user's message. " +
+                "Call exactly one function, exactly one time, then stop. Do not call the same function again, do not retry function calls, " +
+                "and do not enter a loop. The function name must be exactly one of the available functions. Do not use your own data; " +
+                "answer only from the prompt content or the available topic tools.");
             history.AddUserMessage(userPrompt);
 
             var settings = new OpenAIPromptExecutionSettings
@@ -251,12 +261,19 @@ namespace METASYNAPSE.Services.Orchestration
             // SK's Auto function-call loop runs until the LLM stops calling functions
             try
             {
+                Console.WriteLine("Invoking routing kernel to select topics...");
+                //Need to revisit this code to decide when there are more than 1 agents to call and we want to preserve the order of execution of tools across agents. for example if agent 1 calls tool A and then agent 2 calls tool B, we want to make sure that the order of execution is A then B and not the other way around. This is a tricky problem because the LLM may call functions in any order and we need to preserve the order of execution across agents. One way to do this is to have a global list of selected tools that is updated by each routing function and then use that list to determine the order of execution in the main orchestrator loop. This way we can ensure that the tools are executed in the order they were called by the LLM, regardless of which agent they belong to.
                 await LlmRateLimiter.WaitForAvailabilityAsync(cancellationToken).ConfigureAwait(false);
                 await chat.GetChatMessageContentAsync(
                     history,
                     executionSettings: settings,
                     kernel: routingKernel,
                     cancellationToken: cancellationToken).ConfigureAwait(false);
+            }
+            catch (Microsoft.SemanticKernel.HttpOperationException ex)
+            {
+                // This outputs the EXACT field Google is rejecting
+                Console.WriteLine($"Google API Error: {ex.ResponseContent}");
             }
             catch (Exception ex)
             {
@@ -265,6 +282,8 @@ namespace METASYNAPSE.Services.Orchestration
                 throw;
             }
 
+Console.WriteLine("Finished selecting topics.");
+Console.WriteLine($"Selected topics in order: {(_topics.Count > 0 ? string.Join(" → ", selectedNames) : "none")}    ");
             // Preserve call order
             return _topics
                 .Where(t => selectedNames.Contains(t.Name))
@@ -287,6 +306,7 @@ namespace METASYNAPSE.Services.Orchestration
         public async Task<string> RunWithTopicAsync(
             string userPrompt,
             Topic topic,
+            KernelArguments? arguments = null,
             CancellationToken cancellationToken = default)
         {
             Console.WriteLine($"Running with topic with 20sec wait: {topic.Name}");
@@ -320,7 +340,8 @@ namespace METASYNAPSE.Services.Orchestration
             var chatHistory = new ChatHistory(
                 $"Active topic: {topic.Name}. {topic.Description}\n" +
                 "Use the available tools to fulfil the user's request.");
-
+chatHistory.AddSystemMessage("You are an assistant that can only use the tools provided in the active topic. " +
+    "Answer the user's question using only those tools. NEVER attempt to use any tools that are not in the active topic. If you need information that is not available through the tools, say you don't know or can't answer, but do not break character by trying to use unavailable tools or access information outside of the tools.");
             var maskedPrompt = await maskingEngine.maskPrompt(userPrompt).ConfigureAwait(false);
             chatHistory.AddUserMessage(maskedPrompt);
 
@@ -372,6 +393,7 @@ namespace METASYNAPSE.Services.Orchestration
         /// </summary>
         public async Task<(IReadOnlyList<Topic> SelectedTopics, string Response)> RunTopicRoutedAsync(
             string userPrompt,
+            KernelArguments? arguments = null,
             CancellationToken cancellationToken = default)
         {
             var topics = await SelectTopicsAsync(userPrompt, cancellationToken).ConfigureAwait(false);
@@ -385,7 +407,7 @@ namespace METASYNAPSE.Services.Orchestration
             if (topics.Count == 1)
             {
                 Console.WriteLine($"[TopicRouter] Single topic: '{topics[0].Name}'");
-                var resp = await RunWithTopicAsync(userPrompt, topics[0], cancellationToken).ConfigureAwait(false);
+                var resp = await RunWithTopicAsync(userPrompt, topics[0], arguments, cancellationToken).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(resp))
                 {
                     return (topics, "This agent can answer this query, but no response was produced.");
@@ -409,7 +431,7 @@ namespace METASYNAPSE.Services.Orchestration
                     ? userPrompt
                     : BuildChainedPrompt(userPrompt, stepResults);
 
-                var stepResult = await RunWithTopicAsync(stepPrompt, topic, cancellationToken).ConfigureAwait(false);
+                var stepResult = await RunWithTopicAsync(stepPrompt, topic, arguments, cancellationToken).ConfigureAwait(false);
                 stepResults.Add((topic.Name, stepResult));
 
                 Console.WriteLine($"[TopicRouter] Step {i + 1} result: {stepResult}");
@@ -448,6 +470,16 @@ namespace METASYNAPSE.Services.Orchestration
             CancellationToken cancellationToken = default)
         {
             var builder = Kernel.CreateBuilder();
+            // Instantiate the engine
+            var maskingEngine = new PiiMaskingEngine(_presidioEndpoint);
+
+            // Register as both the INBOUND and OUTBOUND filter interceptor
+            builder.Services.AddSingleton<IFunctionInvocationFilter>(maskingEngine);
+            builder.Services.AddSingleton<IAutoFunctionInvocationFilter>(maskingEngine);
+            builder.Services.AddSingleton<IPromptRenderFilter>(maskingEngine);
+
+            // Always-on guardrails: content safety + prompt injection — registered at every filter point
+            GuardrailService.Register(builder);
             var synthesisKernel = builder
                 .AddOpenAIChatCompletion(_model, _endpoint, _apiKey, string.Empty, "OpenAI", null)
                 .Build();

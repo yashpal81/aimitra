@@ -1,23 +1,25 @@
 {
   "Name": "Hiring Manager assistant",
-  "Active": false,
+  "Active": true,
   "Description": "Can load database tables from salesforceCoder database and execute sql query to get data from database. Cant delete Data.",
   "WelcomeMessage": "Welcome to the Hiring Manager assistant. How can I assist you today?",
   "Topics": [
     {
-      "Name": "Database Tool ",
-      "Description": "Can load database tables and execute sql query to get data from database. Cant delete Data.",
+      "Name": "get Salesforce org data using soql and CRUD operation using anonymous apex",
+      "Description": "Can connect with Salesforce org to get Salesforce org data using soql, CRUD operation using anonymous apex and llm generated dynamically built queries .",
       "KernelFunctions": [
-        "DatabaseTools.GetDatabaseSchema",
-        "DatabaseTools.ExecuteSql"
-      ]
-    },
-    {
-      "Name": "Greeting",
-      "Description": "Whenever user greet agent , greet him back and ask him about if he has any query",
-      "KernelFunctions": [
-        "SampleGreetingPlugin.Greet"
+        "SalesforcePlugin.GetSalesforceOrgDataUsingSOQLQueryApexAsync",
+        "SalesforcePlugin.ExecuteAnonymousApexAsync"
       ]
     }
-  ]
+  ],
+  "AutonomousAgents": [],
+  "SummaryAgentName": "",
+  "SummaryAgentDescription": "",
+  "SummaryType": "Daily",
+  "SummaryDataSources": "",
+  "SummaryTemplate": "",
+  "SummarySchedule": "0 9 * * *",
+  "SummaryOutputDestination": "",
+  "SummaryAgentEnabled": true
 }

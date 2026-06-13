@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Security.Claims;
 using System.Threading;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
@@ -8,7 +9,8 @@ using System.Linq;
 using System.Collections.Concurrent;
 using METASYNAPSE.Services.Orchestration;
 using METASYNAPSE.WebChat.Services;
-
+using Microsoft.SemanticKernel;
+using METASYNAPSE.Services.Plugins;
 namespace METASYNAPSE.WebChat.Hubs
 {
     public class ChatHub : Hub
@@ -60,7 +62,8 @@ namespace METASYNAPSE.WebChat.Hubs
             try
             {
                 var sessionCollection = _diagnostics.TryGetCollection(Context.ConnectionId, out var col) ? col : _sharedCollection;
-                var dedupeKey = (sessionCollection ?? "") + "|" + (message ?? "");
+                //var dedupeKey = (sessionCollection ?? "") + "|" + (message ?? "");
+                var dedupeKey = (message ?? "");
                 var now = DateTime.UtcNow;
                 if (RecentMessageCache.TryGetValue(dedupeKey, out var last) && (now - last) < TimeSpan.FromSeconds(3))
                 {
@@ -119,14 +122,30 @@ namespace METASYNAPSE.WebChat.Hubs
                     ? message
                     : $"Use the following context to answer.\n\n{string.Join("\n\n", contexts)}\n\nUser question: {message}";
 
-                botResponse = await _orchestrator.RunTurnAsync(
-                        enrichedMessage,
-                        cancellationToken: default,
-                        intermediateResponseCallback: async partial =>
-                        {
-                            await Clients.All.SendAsync("ReceiveMessage", "METASYNAPSE", partial, assistantMessageId, true);
-                        })
-                    .ConfigureAwait(false);
+                var sfUserId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var sfUserEmail = Context.User?.FindFirst(ClaimTypes.Email)?.Value;
+                var sfAccessToken = Context.User?.FindFirst("SalesforceAccessToken")?.Value;
+
+                _orchestrator.SetSalesforceContext(sfUserId, sfUserEmail, sfAccessToken);
+                
+              //var result= await new SalesforcePlugin().GetAccountIdsUsingAnonymousApexAsync(5).ConfigureAwait(false);
+                
+                try
+                {
+                    botResponse = await _orchestrator.RunTurnAsync(
+                            enrichedMessage,
+                            cancellationToken: default,
+                            intermediateResponseCallback: async partial =>
+                            {
+                                await Clients.All.SendAsync("ReceiveMessage", "METASYNAPSE", partial, assistantMessageId, true);
+                            })
+                        .ConfigureAwait(false);
+                }
+                finally
+                {
+                    _orchestrator.ClearSalesforceContext();
+                }
+                //botResponse = result;
             }
             catch (System.Exception ex)
             {

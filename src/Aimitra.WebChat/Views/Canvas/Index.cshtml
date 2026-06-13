@@ -1,0 +1,33 @@
+@using System.Text.Json
+@{
+    Layout = null;
+    var userName = ViewBag.UserName as string ?? "Salesforce User";
+    var sfContext = ViewBag.SalesforceContext as string ?? "{}";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Salesforce Canvas Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 32px; }
+        pre { background: #f4f4f4; padding: 16px; overflow-x: auto; }
+        button { padding: 10px 16px; font-size: 1rem; }
+    </style>
+</head>
+<body>
+    <h1>Salesforce Canvas Chat</h1>
+    <p>Welcome, <strong>@userName</strong>.</p>
+    <p>Your Salesforce Canvas payload has been decoded successfully.</p>
+    <button id="openChat">Open Embedded Chat</button>
+    <h2>Salesforce Context</h2>
+    <pre>@sfContext</pre>
+
+    <script>
+        window.salesforceContext = @Html.Raw(JsonSerializer.Serialize(sfContext));
+        document.getElementById("openChat").addEventListener("click", function () {
+            window.location.href = "/chatbot";
+        });
+    </script>
+</body>
+</html>

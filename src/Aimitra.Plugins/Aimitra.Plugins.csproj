@@ -14,9 +14,12 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.21.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Plugins.Core" Version="1.45.0-alpha" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <PackageReference Include="Npgsql" Version="8.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Aimitra.Core\Aimitra.Core.csproj" />
   </ItemGroup>
 
 </Project>
-
-
-

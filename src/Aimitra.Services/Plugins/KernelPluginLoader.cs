@@ -4,7 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.SemanticKernel;
-
+using METASYNAPSE.Plugins.Utils;
+using METASYNAPSE.Plugins.Functions;
+using METASYNAPSE.Plugins.Metadata;
 namespace METASYNAPSE.Services.Plugins
 {
     public sealed class KernelPluginLoader

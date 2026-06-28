@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace METASYNAPSE.Services.Plugins
+namespace METASYNAPSE.Plugins.Functions
 {
     public sealed class KernelPluginOptions
     {

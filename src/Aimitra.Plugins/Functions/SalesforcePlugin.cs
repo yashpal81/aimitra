@@ -7,9 +7,10 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.SemanticKernel;
-using METASYNAPSE.Services.Orchestration;
+using METASYNAPSE.Plugins.Functions;
+using METASYNAPSE.Plugins.Utils;
 
-namespace METASYNAPSE.Services.Plugins
+namespace METASYNAPSE.Plugins.Functions
 {
     public class SalesforcePlugin
     {

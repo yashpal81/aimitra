@@ -6,7 +6,7 @@ using METASYNAPSE.Core.Interfaces;
 using METASYNAPSE.Core.Models;
 using Npgsql;
 
-namespace METASYNAPSE.Services.Metadata
+namespace METASYNAPSE.Plugins.Metadata
 {
     public sealed class PostgresMetadataService : IDbMetadataService
     {

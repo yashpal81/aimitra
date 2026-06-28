@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 
-namespace METASYNAPSE.Services.Orchestration
+namespace METASYNAPSE.Plugins.Utils
 {
     public sealed class SalesforceTurnContext
     {

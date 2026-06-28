@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using Microsoft.SemanticKernel;
 
-namespace METASYNAPSE.Services.Plugins
+namespace METASYNAPSE.Plugins.Functions
 {
     /// <summary>
     /// Universal navigation tool registered in every scoped agent kernel.

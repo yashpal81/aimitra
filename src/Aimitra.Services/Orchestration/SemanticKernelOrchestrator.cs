@@ -11,7 +11,7 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using Microsoft.SemanticKernel.ChatCompletion;
 using METASYNAPSE.Core.Interfaces;
-using METASYNAPSE.Services.Metadata;
+//using METASYNAPSE.Services.Metadata;
 using METASYNAPSE.Services.RateLimiting;
 using System.ClientModel;
 using System.Text.RegularExpressions;
@@ -20,7 +20,9 @@ using METASYNAPSE.Security;
 using METASYNAPSE.Security.Guardrails;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
-
+using METASYNAPSE.Plugins.Utils;
+using METASYNAPSE.Plugins.Functions;
+using METASYNAPSE.Plugins.Metadata;
 namespace METASYNAPSE.Services.Orchestration
 {
     public sealed class SemanticKernelOrchestrator

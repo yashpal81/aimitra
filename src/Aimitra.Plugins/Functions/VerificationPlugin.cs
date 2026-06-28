@@ -3,7 +3,7 @@ using System.Text.Json;
 using METASYNAPSE.Core.Models;
 using Microsoft.SemanticKernel;
 
-namespace METASYNAPSE.Services.Plugins
+namespace METASYNAPSE.Plugins.Functions
 {
     /// <summary>
     /// Semantic Kernel plugin for the Verification agent.

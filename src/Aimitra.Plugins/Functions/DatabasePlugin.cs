@@ -10,13 +10,13 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using METASYNAPSE.Core.Interfaces;
 using METASYNAPSE.Core.Models;
-using METASYNAPSE.Services.Metadata;
-using METASYNAPSE.Services.Orchestration;
+using METASYNAPSE.Plugins.Metadata;
+// using METASYNAPSE.Services.Orchestration;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI; // Essential for AddOpenAIChatCompletion
 using Microsoft.SemanticKernel.ChatCompletion;
 using System.Collections.Generic;
-namespace METASYNAPSE.Services.Plugins
+namespace METASYNAPSE.Plugins.Functions
 {
 public class DatabasePlugin
 {

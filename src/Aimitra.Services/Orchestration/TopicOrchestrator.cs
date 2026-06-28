@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 using METASYNAPSE.Core.Interfaces;
 using METASYNAPSE.Core.Models;
 using METASYNAPSE.Services.Orchestration;
+using METASYNAPSE.Plugins.Utils;
+using METASYNAPSE.Plugins.Functions;
+using METASYNAPSE.Plugins.Metadata;
 
 namespace METASYNAPSE.Services.Orchestration
 {

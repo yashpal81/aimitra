@@ -1,15 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
-    <PackageReference Include="Npgsql" Version="4.1.11" />
+    <PackageReference Include="Npgsql" Version="8.0.5" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.15.3" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
-    <PackageReference Include="System.Text.Json" Version="8.0.4" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.21.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.21.0-alpha" />
     <ProjectReference Include="..\Aimitra.Core\Aimitra.Core.csproj" />
+    <ProjectReference Include="..\Aimitra.Plugins\Aimitra.Plugins.csproj" />
     <ProjectReference Include="..\Aimitra.Security\Aimitra.Security.csproj" />
   </ItemGroup>
 
@@ -25,9 +26,3 @@
   </PropertyGroup>
 
 </Project>
-
-
-
-
-
-

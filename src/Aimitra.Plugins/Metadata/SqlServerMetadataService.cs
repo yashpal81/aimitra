@@ -6,7 +6,7 @@ using METASYNAPSE.Core.Interfaces;
 using METASYNAPSE.Core.Models;
 using Microsoft.Data.SqlClient;
 
-namespace METASYNAPSE.Services.Metadata
+namespace METASYNAPSE.Plugins.Metadata
 {
     public sealed class SqlServerMetadataService : IDbMetadataService
     {

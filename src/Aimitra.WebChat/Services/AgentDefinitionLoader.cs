@@ -276,7 +276,8 @@ Console.WriteLine("Kernel function options:");
                 ["FileIOPlugin"] = KernelPluginFactory.CreateFromObject(new FileIOPlugin(), "FileIOPlugin"),
                 ["HttpPlugin"] = KernelPluginFactory.CreateFromObject(new HttpPlugin(), "HttpPlugin"),
                 ["WaitPlugin"] = KernelPluginFactory.CreateFromObject(new WaitPlugin(), "WaitPlugin"),
-                ["GoogleDrivePlugin"] = KernelPluginFactory.CreateFromObject(new METASYNAPSE.SamplePlugins.Plugins.GoogleDrivePlugin(), "GoogleDrivePlugin")
+                ["GoogleDrivePlugin"] = KernelPluginFactory.CreateFromObject(new METASYNAPSE.SamplePlugins.Plugins.GoogleDrivePlugin(), "GoogleDrivePlugin"),
+                ["SalesforcePlugin"] = KernelPluginFactory.CreateFromObject(new SalesforcePlugin(), "SalesforcePlugin")
             };
 
             return pluginCatalog;
@@ -301,7 +302,8 @@ Console.WriteLine("Kernel function options:");
                 ["FileIOPlugin"] = new FileIOPlugin(),
                 ["HttpPlugin"] = new HttpPlugin(),
                 ["WaitPlugin"] = new WaitPlugin(),
-                ["GoogleDrivePlugin"] = new METASYNAPSE.SamplePlugins.Plugins.GoogleDrivePlugin()
+                ["GoogleDrivePlugin"] = new METASYNAPSE.SamplePlugins.Plugins.GoogleDrivePlugin(),
+                ["SalesforcePlugin"] = new SalesforcePlugin()
             };
         }
 

@@ -44,3 +44,10 @@ Thumbs.db
 #plan-prototypingPhase.prompt.md
 #src/temp_openrouter_probe.py
 #src/Aimitra.Services/Orchestration/backupcode.txt
+
+#addtional files to ignore
+*.md
+*.txt
+*.example
+.env.production
+*.db

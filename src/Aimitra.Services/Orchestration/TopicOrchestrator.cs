@@ -35,12 +35,31 @@ namespace METASYNAPSE.Services.Orchestration
         private readonly SemanticKernelOrchestrator _kernel;
         private readonly Dictionary<string, ITopicAgent> _agentRegistry;
         private readonly List<AgentTransition> _transitionLog = new();
+        private SalesforceTurnContext? _salesforceContext;
 
         /// <summary>Shared mutable state for this session.</summary>
         public ConversationState State { get; } = new();
 
         /// <summary>Ordered log of every agent transition this session.</summary>
         public IReadOnlyList<AgentTransition> TransitionLog => _transitionLog;
+
+        public void SetSalesforceContext(string? userId, string? email, string? accessToken)
+        {
+            _salesforceContext = new SalesforceTurnContext
+            {
+                UserId = userId,
+                Email = email,
+                AccessToken = accessToken
+            };
+
+            SalesforceTurnContext.Current = _salesforceContext;
+        }
+
+        public void ClearSalesforceContext()
+        {
+            _salesforceContext = null;
+            SalesforceTurnContext.Current = null;
+        }
 
         /// <param name="kernel">
         /// Configured <see cref="SemanticKernelOrchestrator"/> used for routing and
@@ -84,6 +103,7 @@ namespace METASYNAPSE.Services.Orchestration
         /// </summary>
         public async Task<string> RunTurnAsync(
             string userInput,
+            Microsoft.SemanticKernel.KernelArguments? arguments = null,
             CancellationToken cancellationToken = default,
             Func<string, Task>? intermediateResponseCallback = null)
         {
@@ -164,7 +184,7 @@ namespace METASYNAPSE.Services.Orchestration
                 else
                 {
                     // Fallback — generic kernel execution
-                    stepResult = await _kernel.RunWithTopicAsync(stepPrompt, topic, cancellationToken)
+                    stepResult = await _kernel.RunWithTopicAsync(stepPrompt, topic, arguments, cancellationToken)
                         .ConfigureAwait(false);
 
                     _transitionLog.Add(new AgentTransition

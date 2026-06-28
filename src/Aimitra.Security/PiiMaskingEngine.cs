@@ -101,12 +101,15 @@ public class PiiMaskingEngine : IPromptRenderFilter, IFunctionInvocationFilter, 
             // Update the live execution argument
             context.Arguments[argumentName] = argumentValue;
         }
+        // log tools name 
+        Console.WriteLine($"Tool being called: {context.Function.Name}");
         Console.WriteLine("Unmasked Arguments for Tool:");
         foreach (var argumentName in context.Arguments.Names)        {
             Console.WriteLine($"{argumentName}: {context.Arguments[argumentName]}");
         }
         // Let the C# function execute with the clean, real data safely restored
         await next(context);
+          await Task.Delay(waitingTime);
     }
 
     // =================================================================

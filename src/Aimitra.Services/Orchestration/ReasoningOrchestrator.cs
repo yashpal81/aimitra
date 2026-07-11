@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using METASYNAPSE.Core.Models;
 using METASYNAPSE.Services.Interfaces;
 using METASYNAPSE.Services.RateLimiting;
+using METASYNAPSE.Prompts.SystemPrompts;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
@@ -43,10 +44,6 @@ public sealed class MultiModelKernelService
 {
     private const string NvidiaServiceId = "nvidia-reasoning";
     private const string GeminiServiceId = "gemini-generation";
-    private const string ReActSystemPrompt =
-        "You are a reasoning agent. Think step by step. Use the available tools to gather " +
-        "information or perform actions whenever needed. Continue reasoning and acting until " +
-        "you can provide a complete and accurate final answer.";
 
     private static readonly Uri NvidiaEndpoint = new("https://integrate.api.nvidia.com/v1");
 
@@ -100,7 +97,7 @@ public sealed class MultiModelKernelService
 
         var chatCompletion = _kernel.GetRequiredService<IChatCompletionService>(NvidiaServiceId);
 
-        var history = new ChatHistory(ReActSystemPrompt);
+        var history = new ChatHistory(AgentPrompt.ReActReasoning);
         history.AddUserMessage(prompt);
 
         var settings = new OpenAIPromptExecutionSettings

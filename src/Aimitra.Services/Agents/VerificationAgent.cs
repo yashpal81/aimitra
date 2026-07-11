@@ -13,6 +13,7 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using METASYNAPSE.Plugins.Functions;    
+using METASYNAPSE.Prompts.SystemPrompts;
 
 namespace METASYNAPSE.Services.Agents
 {
@@ -164,35 +165,11 @@ namespace METASYNAPSE.Services.Agents
 
         private string BuildSystemPrompt(ConversationState state)
         {
-            var alreadyVerified = state.CustomerVerified
-                ? $"The customer is already verified as {state.CustomerName} (ID: {state.CustomerId}). " +
-                  "Call go_back with nextTopic='topic_selector' immediately."
-                : "The customer has NOT been verified yet.";
-
-            return @"""
-                You are the Verification Agent for Apex Telecom. Your sole responsibility is to
-                confirm the identity of the customer before any account-sensitive action is taken.
-
-                {alreadyVerified}
-
-                --- WORKFLOW ---
-                1. Greet the customer and explain that you need to verify their identity.
-                2. Ask for their account number AND the last 4 digits of their SSN.
-                3. Once you have both, call verify_customer(accountNumber, ssnLast4).
-                4. If verification succeeds:
-                   - Warmly confirm their name (e.g. ""Great, I've verified your identity, Jane!"").
-                   - Call go_back(nextTopic= ""topic_selector "") to return to the main router.
-                5. If verification fails:
-                   - Apologise and ask the customer to double-check their details.
-                   - Offer one more attempt, then advise them to contact support if it fails again.
-
-                --- CONSTRAINTS ---
-                - Do NOT discuss billing, plans, internet issues, or account changes.
-                - Do NOT reveal SSN digits back to the customer.
-                - Do NOT proceed with any sensitive action until verify_customer returns success=true.
-
-                Session locale: {state.Locale}
-                """;
+            return AgentPrompt.BuildVerificationPrompt(
+                state.CustomerVerified,
+                state.CustomerName,
+                state.CustomerId,
+                state.Locale);
         }
     }
 }

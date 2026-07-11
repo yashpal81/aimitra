@@ -10,6 +10,7 @@
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.21.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.Google" Version="1.21.0-alpha" />
     <ProjectReference Include="..\Aimitra.Core\Aimitra.Core.csproj" />
+    <ProjectReference Include="..\Aimitra.Prompts\Aimitra.Prompts.csproj" />
     <ProjectReference Include="..\Aimitra.Plugins\Aimitra.Plugins.csproj" />
     <ProjectReference Include="..\Aimitra.Security\Aimitra.Security.csproj" />
   </ItemGroup>

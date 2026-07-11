@@ -23,6 +23,7 @@ using System.Net.Http.Headers;
 using METASYNAPSE.Plugins.Utils;
 using METASYNAPSE.Plugins.Functions;
 using METASYNAPSE.Plugins.Metadata;
+using METASYNAPSE.Prompts.SystemPrompts;
 namespace METASYNAPSE.Services.Orchestration
 {
     public sealed class SemanticKernelOrchestrator
@@ -247,11 +248,7 @@ namespace METASYNAPSE.Services.Orchestration
 
             var chat = routingKernel.GetRequiredService<IChatCompletionService>();
             var history = new ChatHistory();
-            history.AddSystemMessage(
-                "You are a topic selector. Choose the single function whose description best matches the user's message. " +
-                "Call exactly one function, exactly one time, then stop. Do not call the same function again, do not retry function calls, " +
-                "and do not enter a loop. The function name must be exactly one of the available functions. Do not use your own data; " +
-                "answer only from the prompt content or the available topic tools.");
+            history.AddSystemMessage(TopicSelection.SystemPrompt);
             history.AddUserMessage(userPrompt);
 
             var settings = new OpenAIPromptExecutionSettings
@@ -339,11 +336,9 @@ Console.WriteLine($"Selected topics in order: {(_topics.Count > 0 ? string.Join(
 
             var chat = scopedKernel.GetRequiredService<IChatCompletionService>();
 
-            var chatHistory = new ChatHistory(
-                $"Active topic: {topic.Name}. {topic.Description}\n" +
-                "Use the available tools to fulfil the user's request.");
-chatHistory.AddSystemMessage("You are an assistant that can only use the tools provided in the active topic. " +
-    "Answer the user's question using only those tools. NEVER attempt to use any tools that are not in the active topic. If you need information that is not available through the tools, say you don't know or can't answer, but do not break character by trying to use unavailable tools or access information outside of the tools.");
+            var chatHistory = new ChatHistory();
+            chatHistory.AddSystemMessage(AgentPrompt.BuildTopicContext(topic.Name, topic.Description));
+            chatHistory.AddSystemMessage(AgentPrompt.TopicScopedToolUse);
             var maskedPrompt = await maskingEngine.maskPrompt(userPrompt).ConfigureAwait(false);
             chatHistory.AddUserMessage(maskedPrompt);
 
@@ -495,11 +490,7 @@ chatHistory.AddSystemMessage("You are an assistant that can only use the tools p
                                 "Synthesizing final response from context:\n" +
                                 "========================================================= \n" 
                                 );    
-            var history = new ChatHistory(
-                "You are a helpful assistant. You have been given the results of a multi-step " +
-                "pipeline that was executed to answer the user's request. " +
-                "Write a single, clear, complete response that combines all the information. " +
-                "Do not mention the pipeline or the step names. Do not include any of the internal thought process, only the final answer for the user.");
+            var history = new ChatHistory(AgentPrompt.Synthesis);
             history.AddUserMessage(
                 $"Original request: {originalPrompt}\n\n" +
                 $"Step results:\n{contextBlock}");

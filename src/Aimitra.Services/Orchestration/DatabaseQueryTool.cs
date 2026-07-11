@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text;
 using METASYNAPSE.Core.Models;
+using METASYNAPSE.Prompts.SystemPrompts;
 
 namespace METASYNAPSE.Services.Orchestration
 {
@@ -9,7 +10,7 @@ namespace METASYNAPSE.Services.Orchestration
         public static string BuildPrompt(string userQuestion, DatabaseSchema schema)
         {
             var builder = new StringBuilder();
-            builder.AppendLine("You are an intelligent SQL assistant.");
+            builder.AppendLine(AgentPrompt.SqlAssistant);
             builder.AppendLine("Use the schema context below to write a single SQL query that answers the user's question.");
             builder.AppendLine("If the question cannot be answered with the available schema, explain why.");
             builder.AppendLine();

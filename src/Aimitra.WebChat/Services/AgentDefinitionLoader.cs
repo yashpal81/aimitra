@@ -14,25 +14,20 @@ namespace METASYNAPSE.WebChat.Services
     public sealed class AgentDefinitionLoader
     {
         private readonly IWebHostEnvironment _environment;
+        private readonly AgentDefinitionStore _definitionStore;
 
-        public AgentDefinitionLoader(IWebHostEnvironment environment)
+        public AgentDefinitionLoader(IWebHostEnvironment environment, AgentDefinitionStore definitionStore)
         {
             _environment = environment;
+            _definitionStore = definitionStore;
         }
 
         public Topic[] LoadActiveTopics()
         {
-            Console.WriteLine($"Starting to load agent definitions from disk at {DateTime.UtcNow}...");  
-            var folder = Path.Combine(AppContext.BaseDirectory, "App_Data", "agent-definitions");
-            if (!Directory.Exists(folder))
-            {
-                return Array.Empty<Topic>();
-            }
-
-            var definitions = Directory.EnumerateFiles(folder, "*.json")
-                .Select(LoadDefinition)
-                .Where(definition => definition is not null && definition.Active)
-                .Select(definition => definition!)
+            Console.WriteLine($"Starting to load agent definitions from SQLite at {DateTime.UtcNow}...");  
+            var definitions = _definitionStore.LoadAll()
+                .Select(file => file.Definition)
+                .Where(definition => definition.Active)
                 .ToList();
 
             Console.WriteLine($"Finished loading agent definitions. {definitions.Count} active definitions found.");
@@ -156,22 +151,6 @@ Console.WriteLine("Kernel function options:");
             return results;
         }
 
-        private static AgentDefinition? LoadDefinition(string filePath)
-        {
-            try
-            {
-                var json = File.ReadAllText(filePath);
-                return JsonSerializer.Deserialize<AgentDefinition>(json, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
         private static Dictionary<string, KernelPlugin> BuildPluginCatalog()
         {
             Dictionary<string, KernelPlugin> pluginCatalog = new Dictionary<string, KernelPlugin>(StringComparer.OrdinalIgnoreCase)
@@ -198,7 +177,7 @@ Console.WriteLine("Kernel function options:");
         }
 
 
-        private static Dictionary<string, KernelPlugin> BuildActivePluginCatalog()
+        private Dictionary<string, KernelPlugin> BuildActivePluginCatalog()
         {
             var activeDefinitions = LoadActiveAgentDefinitions();
             var requiredPluginNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -242,18 +221,11 @@ Console.WriteLine("Kernel function options:");
             return pluginCatalog;
         }
 
-        private static IReadOnlyList<AgentDefinition> LoadActiveAgentDefinitions()
+        private IReadOnlyList<AgentDefinition> LoadActiveAgentDefinitions()
         {
-            var folder = Path.Combine(AppContext.BaseDirectory, "App_Data", "agent-definitions");
-            if (!Directory.Exists(folder))
-            {
-                return Array.Empty<AgentDefinition>();
-            }
-
-            return Directory.EnumerateFiles(folder, "*.json")
-                .Select(LoadDefinition)
-                .Where(definition => definition is not null && definition.Active)
-                .Select(definition => definition!)
+            return _definitionStore.LoadAll()
+                .Select(file => file.Definition)
+                .Where(definition => definition.Active)
                 .ToArray();
         }
 

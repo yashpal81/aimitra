@@ -23,12 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Aimitra.Core\Aimitra.Core.csproj" />
     <ProjectReference Include="..\Aimitra.Services\Aimitra.Services.csproj" />
+    <ProjectReference Include="..\Aimitra.WebChat\Aimitra.WebChat.csproj" />
   </ItemGroup>
 
 </Project>
-
-
-
-
-
-
